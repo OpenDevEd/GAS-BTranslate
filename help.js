@@ -2,6 +2,7 @@
 /**
  * Shows a custom HTML user interface in a sidebar in the Google Docs editor.
  */
+// out-of-use
 function showHelpSidebar() {
   DocumentApp.getUi().showSidebar(
       HtmlService
@@ -20,6 +21,7 @@ function showHelpSidebar() {
           .setWidth(350 /* pixels */));
 }
 
+// out-of-use
 function showCheckSidebar() {
   DocumentApp.getUi().showSidebar(
       HtmlService
@@ -30,7 +32,7 @@ function showCheckSidebar() {
           .setWidth(350 /* pixels */));
 }
 
-
+// out-of-use
 function sorryNotImplementedYet() {
     DocumentApp.getUi().alert("Sorry, this feature hasn't been implemented yet.");
 }

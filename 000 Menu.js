@@ -1,5 +1,6 @@
 ///////////// 000 Menu.gs
 
+// buildMenu uses this
 var userMode = getUserMode();
 
 function onInstall(e) {
@@ -15,6 +16,7 @@ function buildMenu(userMode) {
   submenu_09_translate_basic().addToUi();
 }
 
+// out-of-use
 function changeVersion() {
   var userProperties = PropertiesService.getUserProperties();
   var key = getValueFromUser("Please enter the developer key");
@@ -27,6 +29,7 @@ function changeVersion() {
   };
 }
 
+// out-of-use
 function showUserMode() {
   var userMode = "<empty>";
   try {
@@ -42,6 +45,7 @@ function showUserMode() {
   };
 }
 
+// var userMode uses the function
 function getUserMode() {
   var userMode = "";
   try {

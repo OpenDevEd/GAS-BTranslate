@@ -1,7 +1,9 @@
+// translateSelectionAndAppendL uses the function
 function getgtrURL(txt, origin, dest) {
   return "https://translate.google.com/#view=home&op=translate&sl="+origin+"&tl="+dest+"&text="+ encodeURIComponent(txt);
 }
 
+// getTextAndTranslation, translateSelectionAndAppendL use the function
 function translateText(text, origin, dest) {
   if (origin === dest) return text;
   return LanguageApp.translate(text, origin, dest);
@@ -69,7 +71,7 @@ function showSidebar() {
  * @return {Array.<string>} The selected text.
  */
 
-
+// getTextAndTranslation uses the function
 function getSelectedText() {
   var selection = DocumentApp.getActiveDocument().getSelection();
   var text = [];
@@ -111,6 +113,7 @@ function getSelectedText() {
  *     they exist.
  */
 
+// out-of-use
 function getPreferences() {
   var userProperties = PropertiesService.getUserProperties();
   return {
@@ -133,6 +136,8 @@ function getPreferences() {
  * @return {Object} Object containing the original text and the result of the
  *     translation.
  */
+// More than one!!! 09a translate callables
+// translateSelectedTextAndReplace (out-of-use) uses the function
 function getTextAndTranslation(origin, dest, savePrefs) {
   if (savePrefs) {
     PropertiesService.getUserProperties()
@@ -155,6 +160,7 @@ function getTextAndTranslation(origin, dest, savePrefs) {
  *
  * @param {string} newText The text with which to replace the current selection.
  */
+// translateSelectionAndAppendL, translateSelectedTextAndReplace (out-of-use) use the function
 function insertText(newText) {
   var selection = DocumentApp.getActiveDocument().getSelection();
   if (selection) {

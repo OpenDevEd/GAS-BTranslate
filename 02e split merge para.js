@@ -1,11 +1,14 @@
 var paraMarker = "《!!!》";
 var inlineMarker = "《+》";
 
+// Menu item 'spp split off selected text, then paras [select text]'
 function splitOffSelectedText_thenSplitParas() {
   splitOffSelectedText();
   splitParasInDocumentB();
 };
 
+// Menu item 'spt split off selected text [select text]'
+// splitOffSelectedText_thenSplitParas uses the function
 function splitOffSelectedText() {
   var selection = DocumentApp.getActiveDocument().getSelection();
   if (selection) {
@@ -30,6 +33,7 @@ function splitOffSelectedText() {
   }
 };
 
+// splitOffSelectedText uses the function
 function splitElementIntoParas(element,startOffset,endOffsetInclusive) {
   var doc = DocumentApp.getActiveDocument();
   var body = doc.getBody();
@@ -56,6 +60,8 @@ function splitElementIntoParas(element,startOffset,endOffsetInclusive) {
   };
 };
 
+// Menu item 'sps split paragraphs to sentences [select paragraphs or place cursor in para] pts'
+// splitOffSelectedText_thenSplitParas uses the function
 function splitParasInDocumentB() {  
   var doc = DocumentApp.getActiveDocument();
   var body = doc.getBody();
@@ -127,6 +133,7 @@ function splitParasInDocumentB() {
   };
 };
 
+// Menu item 'mps merge sentences to paragraphs [select paragraphs] stp'
 function mergeParasInDocumentB() {
   var doc = DocumentApp.getActiveDocument();
   var body = doc.getBody();

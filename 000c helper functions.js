@@ -1,3 +1,4 @@
+// out-of-use
 function setPropertyObj(str, styleSet) {
   var sty = JSON.stringify(styleSet);
   // alert("setProperty "+str+": "+sty);
@@ -5,6 +6,7 @@ function setPropertyObj(str, styleSet) {
   userProperties.setProperty(str, sty);
 }
 
+// out-of-use
 function getPropertyObj(str) {
   var sty = null;
   try {
@@ -19,6 +21,7 @@ function getPropertyObj(str) {
 
 // ---- Get selected paragraphs --------
 
+// translateSelectionAndAppendL uses the function
 // If a selection is made, this function gets the paragraphs that include the selection (i.e. more than the section)
 // If no selection is made AND onePara=true, the paragraph in which the cursor is, is returned.
 // If no selection is made AND onePara=false, all paragraphs are returned.
@@ -26,6 +29,7 @@ function getParagraphs(onePara) {
   return getParagraphsInBodyAndFootnotes(onePara,false);
 };
 
+// getParagraphs uses the function 
 function getParagraphsInBodyAndFootnotes(onePara,getFootnoteParas) {
   return getParagraphsInBodyAndFootnotesExtended(onePara,true,getFootnoteParas);
 };
@@ -37,7 +41,7 @@ getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnoteParas)
 // We want to be sure that only selected (or in-cursor) paragraphs are returned, and we only want body paras
 getParagraphsInBodyAndFootnotesExtended(true,true,false);
 */
-
+// mergeParasInDocumentB, getParagraphsInBodyAndFootnotes use the function
 function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnoteParas) {
   var paraout = [];
   var selection = DocumentApp.getActiveDocument().getSelection();
@@ -126,7 +130,7 @@ function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnot
   return paraout;
 }
 
-
+// enterDeepLAPIkey, changeVersion (out-of-use) use the function
 function getValueFromUser(title,text, defaultOK, defaultCancel, defaultClose) {
   text = text || "Please enter a value.";
   defaultOK = defaultOK || "";
@@ -158,6 +162,7 @@ function getValueFromUser(title,text, defaultOK, defaultCancel, defaultClose) {
   return null;
 }
 
+// out-of-use
 function getConfirmationFromUser(text) {
   // Display a dialog box with a message and "Yes" and "No" buttons.
   var ui = DocumentApp.getUi();
@@ -170,21 +175,22 @@ function getConfirmationFromUser(text) {
   }
 }
 
-
+// whoami and others function use the function 
 function alert(text) {
   DocumentApp.getUi().alert(text);
 };
 
+// out-of-use
 function alertv(text,myvariable) {
   DocumentApp.getUi().alert(text+" = "+JSON.stringify(myvariable));
 };
 
+// out-of-use
 function onlyUnique(value, index, self) { 
     return self.indexOf(value) === index;
 };
 
-
-
+// out-of-use
 function getColourByName(name) {
   if (name) {
     if (htmlColourNames[name]) {

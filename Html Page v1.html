@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<base target="_top">
+		<?!= include('CSS v1'); ?>
+		<?!= include('JavaScript v1'); ?>    
+	</head>
+	<body onload="createSourceList()">
+    <div style="position: sticky; top: 0px; z-index: 999;">
+		<div id="output" class="error"></div>
+    <div id="header" class="header"></div>
+		<div id="toDoHeader" class="toDoHeader">Select source</div>
+</div>
+		<form id="languageSelectionForm" onsubmit="handleFormSubmit(this);">
+			
+			<div class="form-group" id="form-group"  style="padding-top: 10px;">
+
+			</div>  
+
+			<input type="hidden" id="toDo" name="toDo" value="selectTarget">
+      <input type="hidden" id="savedSource" name="savedSource" value="1">
+      <input type="hidden" id="savedTarget" name="savedTarget" value="1">
+
+			<div class="form-group right">    
+				<input type="button" value="Cancel" onclick="closeIt()">&nbsp;
+				<input class="action" type="submit" value="Next" id="submitButton">
+			</div>
+			
+		</form>  
+		
+	</body>
+</html>
