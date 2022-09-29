@@ -20,13 +20,15 @@ function getDeeplApiKeySettings() {
       resultObj['menuText'] = deeplApiKeySettings[settings]['menuText'];
       resultObj['marker'] = '✅';
       if (settings == 'doc') {
-        const docKey = getDeepLAPIkey('doc')
+        const docKey = getDeepLAPIkey('doc');
         if (docKey == null) {
           resultObj['marker'] = '❌';
         }
       }
     }
-
+    if (settings == null){
+      resultObj['marker'] = '✅';
+    }
   }
   catch (error) {
     Logger.log('Needs to activate!!! ' + error);

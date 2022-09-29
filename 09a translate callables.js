@@ -119,6 +119,7 @@ function submenu_09_translate_basic(e) {
   /* Note: API key used in 09c */
   TrMenu.addItem(actionNameUser + ' API key for user / all documents', 'enterDeepLAPIkeyUser')
     .addItem('Remove API key for user / all documents', 'removeDeepLAPIkeyUser')
+    .addItem('Copy user API key to document', 'copyUserApiKeyToDocument')
     .addItem(actionNameDoc + ' API key for document', 'enterDeepLAPIkeyDoc')
     .addItem('Remove API key for document', 'removeDeepLAPIkeyDoc')
     .addSeparator();

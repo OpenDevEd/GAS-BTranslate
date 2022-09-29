@@ -8,6 +8,7 @@ function enterDeepLAPIkeyDoc() {
   enterDeepLAPIkey('doc');
 }
 
+// enterDeepLAPIkeyUser, enterDeepLAPIkeyDoc, translateSelectionAndAppendL use the function
 function enterDeepLAPIkey(storage) {
   let properties;
   const storageDesc = storage == 'user' ? 'user / all documents' : 'document';
@@ -26,7 +27,7 @@ function enterDeepLAPIkey(storage) {
       }
       properties.setProperty('DeepLAPIkey', apiKey);
       onOpen();
-      return { status: 'ok',  apiKey: apiKey};
+      return { status: 'ok', apiKey: apiKey };
     } else {
       alert(result.message);
     }
@@ -80,6 +81,23 @@ function getDeepLAPIkey(storage) {
   return key;
 }
 
+// Menu item 'Copy user API key to document'
+function copyUserApiKeyToDocument() {
+  let deeplApiKeyUser = getDeepLAPIkey('user');
+  if (deeplApiKeyUser == null) {
+    alert("Error! DeepL API key for user/all documents doesn't exist. Add it.");
+    keyResult = enterDeepLAPIkey('user');
+    if (keyResult.status == 'ok') {
+      deeplApiKeyUser = keyResult.apiKey;
+    } else if (keyResult.status == 'error') {
+      return 0;
+    }
+  }
+  properties = PropertiesService.getDocumentProperties();
+  properties.setProperty('DeepLAPIkey', deeplApiKeyUser);
+}
+
+
 // Test for getDeepLAPIkey()
 function logDeepLAPIkeyUser() {
   const key = getDeepLAPIkey('user')
@@ -91,3 +109,4 @@ function logDeepLAPIkeyDoc() {
   const key = getDeepLAPIkey('doc')
   Logger.log(key);
 }
+
