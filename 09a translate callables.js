@@ -9,12 +9,14 @@ var lang5 = "es";
 var lang6 = "pt-pt";
 
 // buildMenu, submenu_09_translate_full use the function
+// Make this a sub-menu, called 'Utilities'
 function submenu_09_translate_basic() {
   var TrMenu = DocumentApp.getUi().createMenu('bTranslate')
     .addItem('sps split paragraphs to sentences [select paragraphs or place cursor in para] pts', 'splitParasInDocumentB')
     .addItem('spt split off selected text [select text]', 'splitOffSelectedText')
     .addItem('spp split off selected text, then paras [select text]', 'splitOffSelectedText_thenSplitParas')
     .addItem('mps merge sentences to paragraphs [select paragraphs] stp', 'mergeParasInDocumentB')
+    .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
     .addSeparator();
 
 
@@ -23,40 +25,55 @@ function submenu_09_translate_basic() {
   let key;
   for (let i in translationSettings.menuOrder) {
     key = translationSettings.menuOrder[i];
-    TrMenu.addItem(translationSettings[key].sourceTarget, 'translationSlots.s' + j + '.run');
+    TrMenu.addItem("tra"+j+" "+translationSettings[key].sourceTarget, 'translationSlots.s' + j + '.run');
     j++;
   }
 
-     TrMenu.addSeparator().addItem('Translation settings', 'showTranslationSettingsDialog')
-    .addItem('Clear translation settings', 'clearTranslationSettings');
+  TrMenu.addSeparator()
+    .addItem('Translation settings', 'showTranslationSettingsDialog')
+    .addItem('Clear translation settings', 'clearTranslationSettings')
+    .addItem('Example settings: Google', 'exampleTranslationSettings')
+    .addItem('Example settings: DeepL', 'exampleTranslationSettings');
+    /*
+    Google:
+    English->Amharic
+    English->Arabic
+    English->Chinese
+    English->French 
+    English->German
+    English->Georgian
+    English->Hindi
+    English->Krio
+    English->Russian
+    English->Spanish 
+    English->Zulu
 
-/*
-  TrMenu.addItem('tra12 translate selection and append (' + lang1 + '->' + lang2 + ')', 'translateSelectionAndAppend12')
-    .addItem('tra21 translate selection and append (' + lang2 + '->' + lang1 + ')', 'translateSelectionAndAppend21')
-    .addItem('tra13 translate selection and append (' + lang1 + '->' + lang3 + ')', 'translateSelectionAndAppend13')
-    .addItem('tra31 translate selection and append (' + lang3 + '->' + lang1 + ')', 'translateSelectionAndAppend31')
-    .addItem('tra14 translate selection and append (' + lang1 + '->' + lang4 + ')', 'translateSelectionAndAppend14')
-    .addItem('tra41 translate selection and append (' + lang4 + '->' + lang1 + ')', 'translateSelectionAndAppend41')
-    //.addItem('tra15 translate selection and append ('+lang1+'->'+lang5+')', 'translateSelectionAndAppend15')
-    //.addItem('tra16 translate selection and append ('+lang1+'->'+lang6+')', 'translateSelectionAndAppend16')
-    .addSeparator()
-    // New
-    .addItem('Select primary language', '...')
-    .addItem('Select language 2', '...')
-    .addItem('Select language 3', '...')
-    .addItem('Select language 4', '...');
+    DeepL:
+    English->German (DeepL:formal, Google)
+    German->English (DeepL, Google)
+    English->French (DeepL:formal, Google)
+    French->English (DeepL, Google)
+    English->Spanish (DeepL:formal, Google)
+    Spanish->English (DeepL, Google)
+    English->Arabic
+    English->Chinese
+    English->Russion
+    (UN languages: Arabic, Chinese, English, French, Russian and Spanish)
     */
-    TrMenu.addSeparator()
+  TrMenu.addSeparator();
+
+  const activeFormatStyle = getFormatSettings();
+  let selectedStyleMarker = '';
+  for (let formatStyle in formatStyles) {
+    selectedStyleMarker = formatStyle === activeFormatStyle.style ? ' ' + activeFormatStyle.marker : '';
+    TrMenu.addItem(formatStyles[formatStyle].menuText + selectedStyleMarker, 'formatStyles.' + formatStyle + '.run');
+  }
+
+TrMenu.addSeparator();
     // New
-    .addItem('Format: Sequential in text', '...')
-    .addItem('Format: Primary language in text, rest in footnote', '...')
-    .addItem('Format: Primary language in text, rest in comment (links are preserved)', '...')
-    .addSeparator()
-    // New function          
-    .addItem('Enable DeepL by entering API key', 'enterDeepLAPIkey')
+    TrMenu.addItem('Enable DeepL by entering API key', 'enterDeepLAPIkey')
     /* Note: API key used in 09c */
     .addItem('gdlu get DeepL usage and costs', 'getDeepLUsage')
-    .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
     ;
 
 

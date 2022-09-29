@@ -3,6 +3,7 @@ var apikey = "";
 //might consider using post? https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app#fetch(String)
 // translateSelectionAndAppendL uses the function
 function translateTextDeepL(txt, from, to, formality) {
+
   var url = "https://api.deepl.com/v2/translate?auth_key=" + apikey +
     "&source_lang=" + from.toUpperCase() + "&target_lang=" + to.toUpperCase() + "&formality=" + formality + "&text=" + encodeURIComponent(txt);
   var response = UrlFetchApp.fetch(url);
