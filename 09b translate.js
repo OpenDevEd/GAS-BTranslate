@@ -15,11 +15,75 @@ function translateSelectionAndAppendL(settings) {
   // Logger.log(deepLArray);
   // Logger.log(googleArray);
 
-  apikey = getDeepLAPIkey();
-  if (apikey == null) {
-    alert('Please enable DeepL by entering API key.');
-    return 0;
+  if (deepLArray.length > 0) {
+    // DeepL API key
+    const activeDeeplApiKeySettings = getDeeplApiKeySettings().settings;
+    let deeplApiKeyUser = getDeepLAPIkey('user');
+    let deeplApiKeyDoc = getDeepLAPIkey('doc');
+
+    let useDeeplApiKeyUser, useDeeplApiKeyDoc, confirmationResult, selectedStorage, keyResult;
+    // Always ask
+    if (activeDeeplApiKeySettings == 'ask') {
+      if (deeplApiKeyUser != null && deeplApiKeyDoc != null) {
+        confirmationResult = getConfirmationFromUser('If you want to use DeepL API key stored in user properties, click OK.\nIf you want to use DeepL API key stored in document properties, click CANCEL');
+        if (confirmationResult === true) {
+          selectedStorage = 'user';
+        } else {
+          selectedStorage = 'doc';
+        }
+      } else if (deeplApiKeyUser == null && deeplApiKeyDoc == null) {
+        alert('Please enable DeepL by entering API key.');
+        return 0;
+      } else if (deeplApiKeyUser != null && deeplApiKeyDoc == null) {
+        confirmationResult = getConfirmationFromUser('If you want to use DeepL API key stored in user properties, click OK.\nIf you want to add DeepL API key for document, click CANCEL');
+        if (confirmationResult === true) {
+          selectedStorage = 'user';
+        } else {
+          selectedStorage = 'doc';
+          keyResult = enterDeepLAPIkey('doc');
+          if (keyResult.status == 'ok') {
+            deeplApiKeyDoc = keyResult.apiKey;
+          } else if (keyResult.status == 'error') {
+            return 0;
+          }
+        }
+      } else if (deeplApiKeyUser == null && deeplApiKeyDoc != null) {
+        confirmationResult = getConfirmationFromUser('If you want to use DeepL API key stored in doc properties, click OK.\nIf you want to add DeepL API key for user/all documents, click CANCEL');
+        if (confirmationResult === true) {
+          selectedStorage = 'doc';
+        } else {
+          selectedStorage = 'user';
+          keyResult = enterDeepLAPIkey('user');
+          if (keyResult.status == 'ok') {
+            deeplApiKeyUser = keyResult.apiKey;
+          } else if (keyResult.status == 'error') {
+            return 0;
+          }
+        }
+      }
+      apiKey = selectedStorage == 'user' ? deeplApiKeyUser : deeplApiKeyDoc;
+      Logger.log('apiKey=' + apiKey);
+    }
+    // End. Always ask
+
+    // Default to document API key / Default to user API key
+    if (activeDeeplApiKeySettings == 'doc' || activeDeeplApiKeySettings == 'user') {
+      if ((activeDeeplApiKeySettings == 'doc' && deeplApiKeyDoc == null) || (activeDeeplApiKeySettings == 'user' && deeplApiKeyUser == null)) {
+        keyResult = enterDeepLAPIkey(activeDeeplApiKeySettings);
+        if (keyResult.status == 'ok') {
+          //deeplApiKeyDoc = keyResult.apiKey;
+          apiKey = keyResult.apiKey;
+        } else if (keyResult.status == 'error') {
+          return 0;
+        }
+      } else if ((activeDeeplApiKeySettings == 'doc' && deeplApiKeyDoc != null) || (activeDeeplApiKeySettings == 'user' && deeplApiKeyUser != null)) {
+        apiKey = activeDeeplApiKeySettings == 'user' ? deeplApiKeyUser : deeplApiKeyDoc;
+      }
+    }
+    // End. Default to document API key / Default to user API key
+    // End. DeepL API key
   }
+
 
   let translationLinkText, linkStart, linkEnd, dLlinkText;
 
@@ -46,7 +110,8 @@ function translateSelectionAndAppendL(settings) {
           var elementText = element.asText().getText();
           Logger.log('elementText' + elementText);
           // This check is necessary to exclude images, which return a blank text element.
-          if (elementText && elementText.match(/\w/)) {
+          if (elementText.length > 0) {
+            //if (elementText && elementText.match(/\w/)) {
 
             var parent = element.getParent();
             var offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
@@ -57,12 +122,12 @@ function translateSelectionAndAppendL(settings) {
               // translate using Google Translate and insert
               var out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
               Logger.log(out);
-
-              var newPara = parent.insertParagraph(parPosition, "《G》" + out);
+              var glinkText = "《G:" + googleArray[j].dest + "》";
+              var newPara = parent.insertParagraph(parPosition, glinkText + out);
               var style = element.editAsText().getAttributes();
               newPara.editAsText().setAttributes(style);
               var gtrURL = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
-              newPara.editAsText().setLinkUrl(0, 2, gtrURL);
+              newPara.editAsText().setLinkUrl(0, glinkText.length - 1, gtrURL);
             }
 
             // translate using DeepL and insert
@@ -146,6 +211,15 @@ function appendFootnotes(deepLArray, googleArray) {
     for (var i = 0; i < p.length; i++) {
       mainTranslationAdded = false;
       var element = p[i];
+
+      Logger.log('AtDocumentEnd?' + element.isAtDocumentEnd());
+      if (element.isAtDocumentEnd() === true) {
+        doc.getBody().appendParagraph(' ');
+        Logger.log('AtDocumentEnd');
+      } else {
+        Logger.log('Not AtDocumentEnd');
+      }
+
       var boundaryStart = "";
       var boundaryEnd = "";
       if (i == 0) {
@@ -158,7 +232,8 @@ function appendFootnotes(deepLArray, googleArray) {
         var elementText = element.asText().getText();
         Logger.log('elementText' + elementText);
         // This check is necessary to exclude images, which return a blank text element.
-        if (elementText && elementText.match(/\w/)) {
+        if (elementText.length > 0) {
+          // if (elementText && elementText.match(/\w/)) {
 
           var offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
           var parent = element.getParent();
@@ -205,7 +280,7 @@ function appendFootnotes(deepLArray, googleArray) {
               var newPara = parent.insertParagraph(parPosition, glinkText + out);
 
               newPara.editAsText().setAttributes(style);
-              newPara.editAsText().setLinkUrl(0, 2, gtrURL);
+              newPara.editAsText().setLinkUrl(0, glinkText.length - 1, gtrURL);
               rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
               footnotesInfo[rangeName].elementText = elementText;
               mainTranslationAdded = true;
@@ -228,6 +303,9 @@ function appendFootnotes(deepLArray, googleArray) {
            element.editAsText().insertText(0, "《translationOf: ");
            element.editAsText().insertText(element.editAsText().getText().toString().length, "》" + boundaryEnd);
            element.editAsText().setAttributes(0, 15, style); */
+          if (p.length - 1 == i) {
+            doc.getBody().appendParagraph(' ');
+          }
           element.removeFromParent();
         } else {
           Logger.log('A blank text element');

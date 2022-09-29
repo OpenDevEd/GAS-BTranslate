@@ -8,12 +8,12 @@ function onInstall(e) {
 }
 
 function onOpen(e) {
-  buildMenu(userMode);
+  buildMenu(e, userMode);
 };
 
-function buildMenu(userMode) {
+function buildMenu(e, userMode) {
   userMode = userMode || userModeDefault;
-  submenu_09_translate_basic().addToUi();
+  submenu_09_translate_basic(e).addToUi();
 }
 
 // out-of-use

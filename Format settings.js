@@ -18,7 +18,7 @@ function getFormatSettings() {
       resultObj['style'] = formatStyle;
       resultObj['menuText'] = formatStyles[formatStyle]['menuText'];
     }
-    resultObj['marker'] = '🟢';
+    resultObj['marker'] = '✅';
   }
   catch (error) {
     Logger.log('Needs to activate!!! ' + error);
