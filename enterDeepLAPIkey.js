@@ -97,7 +97,6 @@ function copyUserApiKeyToDocument() {
   properties.setProperty('DeepLAPIkey', deeplApiKeyUser);
 }
 
-
 // Test for getDeepLAPIkey()
 function logDeepLAPIkeyUser() {
   const key = getDeepLAPIkey('user')

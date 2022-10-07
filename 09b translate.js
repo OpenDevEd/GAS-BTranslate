@@ -17,7 +17,7 @@ function translateSelectionAndAppendL(settings) {
 
   if (deepLArray.length > 0) {
     // DeepL API key
-    const activeDeeplApiKeySettings = getDeeplApiKeySettings().settings;
+    const activeDeeplApiKeySettings = getDeeplApiKeySettings(true).settings;
     let deeplApiKeyUser = getDeepLAPIkey('user');
     let deeplApiKeyDoc = getDeepLAPIkey('doc');
 
@@ -87,7 +87,7 @@ function translateSelectionAndAppendL(settings) {
 
   let translationLinkText, linkStart, linkEnd, dLlinkText;
 
-  const format = getFormatSettings();
+  const format = getFormatSettings(true);
   if (format.style == 'footnotes') {
     Logger.log('footnotes');
     appendFootnotes(deepLArray, googleArray);
@@ -191,13 +191,14 @@ function translateSelectionAndAppendL(settings) {
     } else {
       alert('could not get para');
     };
+  }else{
+    alert('Error. Unexpected format style.');
   }
 }
 
 function appendFootnotes(deepLArray, googleArray) {
   const doc = DocumentApp.getActiveDocument();
   const documentId = doc.getId();
-
 
   const namedRanges = [];
   const footnotesInfo = new Object();

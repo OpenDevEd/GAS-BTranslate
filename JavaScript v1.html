@@ -74,7 +74,7 @@ function handleFormSubmit(formObject) {
       } else {
         toDoEl.value = 'selectSettings';
         console.log('selectSettings');
-        divToDoHeader.innerHTML = "Select the translation engine. For DeepL API key is required. For 'footnote mode', the first of these engines provides the main translation, other engines provide text for the footnotes.";
+        divToDoHeader.innerHTML = "Select the translation engines. For DeepL, an API key is required. For 'footnote mode', the first of these engines provides the main translation, the other engines provide the text for the footnotes.";
         createCheckboxList(allTranslators, source, target);
         document.getElementById('submitButton').disabled = true;
       }

@@ -1,39 +1,34 @@
-/* function getDeeplApiKeySettings() {
-  const userProperties = PropertiesService.getUserProperties();
-  const settings = userProperties.getProperty('DEEPL_API_KEY_SETTINGS');
-  return settings;
-} */
-
-
-function getDeeplApiKeySettings() {
+// submenu_09_translate_basic, translateSelectionAndAppendL use the function
+function getDeeplApiKeySettings(tryToRetrieveProperties) {
   const DEFAULT_SETTINGS = 'user';
-  let resultObj = {
+  const resultObj = {
     marker: '',
     settings: DEFAULT_SETTINGS,
     menuText: deeplApiKeySettings[DEFAULT_SETTINGS]['menuText']
   };
-  try {
-    const userProperties = PropertiesService.getUserProperties();
-    const settings = userProperties.getProperty('DEEPL_API_KEY_SETTINGS');
-    if (settings != null && deeplApiKeySettings.hasOwnProperty(settings)) {
-      resultObj['settings'] = settings;
-      resultObj['menuText'] = deeplApiKeySettings[settings]['menuText'];
-      resultObj['marker'] = '✅';
-      if (settings == 'doc') {
-        const docKey = getDeepLAPIkey('doc');
-        if (docKey == null) {
-          resultObj['marker'] = '❌';
+  if (tryToRetrieveProperties === true) {
+    try {
+      const userProperties = PropertiesService.getUserProperties();
+      const settings = userProperties.getProperty('DEEPL_API_KEY_SETTINGS');
+      if (settings != null && deeplApiKeySettings.hasOwnProperty(settings)) {
+        resultObj['settings'] = settings;
+        resultObj['menuText'] = deeplApiKeySettings[settings]['menuText'];
+        resultObj['marker'] = '✅';
+        if (settings == 'doc') {
+          const docKey = getDeepLAPIkey('doc');
+          if (docKey == null) {
+            resultObj['marker'] = '❌';
+          }
         }
       }
+      if (settings == null) {
+        resultObj['marker'] = '✅';
+      }
     }
-    if (settings == null){
-      resultObj['marker'] = '✅';
+    catch (error) {
+      Logger.log('Needs to activate!!! ' + error);
     }
   }
-  catch (error) {
-    Logger.log('Needs to activate!!! ' + error);
-  }
-  Logger.log(resultObj);
   return resultObj;
 }
 

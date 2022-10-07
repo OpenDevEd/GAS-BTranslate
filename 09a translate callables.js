@@ -1,57 +1,62 @@
 // buildMenu, submenu_09_translate_full use the function
 function submenu_09_translate_basic(e) {
-  let actionNameUser, actionNameDoc;
+  let actionNameUser, actionNameDoc, tryToRetrieveProperties;
+
+  const TrMenu = DocumentApp.getUi().createMenu('bTranslate');
+
   if (e && e.authMode == ScriptApp.AuthMode.NONE) {
     actionNameUser = 'Add/change';
     actionNameDoc = 'Add/change';
+    TrMenu.addItem('Activate add-on', 'activateAddOn');
+    tryToRetrieveProperties = false;
   } else {
     const deeplApiKeyUser = getDeepLAPIkey('user');
     actionNameUser = deeplApiKeyUser == null ? 'Add' : 'Change';
+
     const deeplApiKeyDoc = getDeepLAPIkey('doc');
     actionNameDoc = deeplApiKeyDoc == null ? 'Add' : 'Change';
+
+    tryToRetrieveProperties = true;
   }
 
-  const TrMenu = DocumentApp.getUi().createMenu('bTranslate');
-  const translationSettings = getTranslationSettings();
-  let j = 1;
-  let key, translators, formality, version;
-  for (let i in translationSettings.menuOrder) {
-    translators = [];
-    key = translationSettings.menuOrder[i];
-    // List of translators
-    for (let j in translationSettings[key].targets) {
-      if (translationSettings[key].targets[j].hasOwnProperty('deepL')) {
-        if (translationSettings[key].targets[j].form == 'default') {
-          formality = '';
-        } else {
-          formality = translationSettings[key].targets[j].form == 'less' ? ' informal' : ' formal';
-        }
-        if (['EN-US', 'EN-GB'].includes(translationSettings[key].targets[j].deepL)) {
-          version = ' ' + translationSettings[key].targets[j].deepL;
-        } else {
-          version = '';
-        }
+  if (tryToRetrieveProperties === true) {
+    const translationSettings = getTranslationSettings();
+    let j = 1;
+    let key, translators, formality, version;
+    for (let i in translationSettings.menuOrder) {
+      translators = [];
+      key = translationSettings.menuOrder[i];
+      // List of translators
+      for (let j in translationSettings[key].targets) {
+        if (translationSettings[key].targets[j].hasOwnProperty('deepL')) {
+          if (translationSettings[key].targets[j].form == 'default') {
+            formality = '';
+          } else {
+            formality = translationSettings[key].targets[j].form == 'less' ? ' informal' : ' formal';
+          }
+          if (['EN-US', 'EN-GB', 'PT-BR', 'PT-PT'].includes(translationSettings[key].targets[j].deepL)) {
+            version = ' ' + translationSettings[key].targets[j].deepL;
+          } else {
+            version = '';
+          }
 
-        translators.push('DeepL' + version + formality);
-      }
-      if (translationSettings[key].targets[j].hasOwnProperty('google')) {
-        if (['zh-CN', 'zh-TW'].includes(translationSettings[key].targets[j].google)) {
-          version = ' ' + translationSettings[key].targets[j].google;
-        } else {
-          version = '';
+          translators.push('DeepL' + version + formality);
         }
-        translators.push('Google' + version);
+        if (translationSettings[key].targets[j].hasOwnProperty('google')) {
+          if (['zh-CN', 'zh-TW'].includes(translationSettings[key].targets[j].google)) {
+            version = ' ' + translationSettings[key].targets[j].google;
+          } else {
+            version = '';
+          }
+          translators.push('Google' + version);
+        }
       }
+      // End. List of translators
+      TrMenu.addItem("tra" + j + " " + translationSettings[key].sourceTarget + ' (' + translators.join(', ') + ')', 'translationSlots.s' + j + '.run');
+      j++;
     }
-    // End. List of translators
-    TrMenu.addItem("tra" + j + " " + translationSettings[key].sourceTarget + ' (' + translators.join(', ') + ')', 'translationSlots.s' + j + '.run');
-    j++;
-  }
 
-  if (j == 1) {
-    if (e && e.authMode == ScriptApp.AuthMode.NONE) {
-      TrMenu.addItem('Activate add-on', 'activateAddOn');
-    } else {
+    if (j == 1) {
       TrMenu.addItem('Add translation settings', 'showTranslationSettingsDialog')
     }
   }
@@ -61,54 +66,10 @@ function submenu_09_translate_basic(e) {
     .addItem('Clear translation settings', 'clearTranslationSettings')
     .addItem('Example settings: Google', 'exampleTranslationSettingsGoogle')
     .addItem('Example settings: DeepL', 'exampleTranslationSettingsDeepL');
-  /*
-  Google:
-  English->Amharic
-  English->Arabic
-  English->Chinese
-  English->French 
-  English->German
-  English->Georgian
-  English->Hindi
-  English->Krio
-  English->Russian
-  English->Spanish 
-  English->Zulu
 
-  DeepL:
-  English->German (DeepL:formal, Google)
-  German->English (DeepL, Google)
-  English->French (DeepL:formal, Google)
-  French->English (DeepL, Google)
-  English->Spanish (DeepL:formal, Google)
-  Spanish->English (DeepL, Google)
-  English->Arabic
-  English->Chinese
-  English->Russion
-
--------------
-  English->Arabic
-  
-  English->Chinese
-  
-  English->French (DeepL:formal, Google)
-  French->English (DeepL, Google)
-  
-  English->German (DeepL:formal, Google)
-  German->English (DeepL, Google)
-
-  English->Russian
-
-  English->Spanish (DeepL:formal, Google)
-  Spanish->English (DeepL, Google)
-
-
-
-  (UN languages: Arabic, Chinese, English, French, Russian and Spanish)
-  */
   TrMenu.addSeparator();
 
-  const activeFormatStyle = getFormatSettings();
+  const activeFormatStyle = getFormatSettings(tryToRetrieveProperties);
   let selectedStyleMarker = '';
   for (let formatStyle in formatStyles) {
     selectedStyleMarker = formatStyle === activeFormatStyle.style ? activeFormatStyle.marker + ' ' : '';
@@ -116,24 +77,10 @@ function submenu_09_translate_basic(e) {
   }
 
   TrMenu.addSeparator();
-  /* Note: API key used in 09c */
-  TrMenu.addItem(actionNameUser + ' API key for user / all documents', 'enterDeepLAPIkeyUser')
-    .addItem('Remove API key for user / all documents', 'removeDeepLAPIkeyUser')
-    .addItem('Copy user API key to document', 'copyUserApiKeyToDocument')
-    .addItem(actionNameDoc + ' API key for document', 'enterDeepLAPIkeyDoc')
-    .addItem('Remove API key for document', 'removeDeepLAPIkeyDoc')
-    .addSeparator();
 
-  const activeDeeplApiKeySettings = getDeeplApiKeySettings();
+  /* end of main items */
 
-  for (let settings in deeplApiKeySettings) {
-    selectedSettingsMarker = settings == activeDeeplApiKeySettings.settings ? activeDeeplApiKeySettings.marker + ' ' : '  ';
-    TrMenu.addItem(selectedSettingsMarker + deeplApiKeySettings[settings].menuText, 'deeplApiKeySettings.' + settings + '.run');
-  }
-
-  TrMenu.addSeparator()
-    .addItem('gdlu get DeepL usage and costs', 'getDeepLUsage');
-
+  /* start submenu 1: Utilities */
   TrMenu.addSubMenu(DocumentApp.getUi().createMenu('Utilities')
     .addItem('sps split paragraphs to sentences [select paragraphs or place cursor in para] pts', 'splitParasInDocumentB')
     .addItem('spt split off selected text [select text]', 'splitOffSelectedText')
@@ -141,6 +88,30 @@ function submenu_09_translate_basic(e) {
     .addItem('mps merge sentences to paragraphs [select paragraphs] stp', 'mergeParasInDocumentB')
     .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
   );
+  /* end submenu 1 */
+  /* start submenu 2: Manage DeepL API */
+  /* Note: API key used in 09c */
+  const submenu2 = DocumentApp.getUi().createMenu('Manage DeepL API');
+  submenu2.addItem(actionNameUser + ' API key for user / all documents', 'enterDeepLAPIkeyUser')
+    .addItem('Remove API key for user / all documents', 'removeDeepLAPIkeyUser')
+    .addItem('Copy user API key to document', 'copyUserApiKeyToDocument')
+    .addItem(actionNameDoc + ' API key for document', 'enterDeepLAPIkeyDoc')
+    .addItem('Remove API key for document', 'removeDeepLAPIkeyDoc')
+    .addSeparator();
+
+  const activeDeeplApiKeySettings = getDeeplApiKeySettings(tryToRetrieveProperties);
+
+  for (let settings in deeplApiKeySettings) {
+    selectedSettingsMarker = settings == activeDeeplApiKeySettings.settings ? activeDeeplApiKeySettings.marker + ' ' : '  ';
+    submenu2.addItem(selectedSettingsMarker + deeplApiKeySettings[settings].menuText, 'deeplApiKeySettings.' + settings + '.run');
+  }
+
+  submenu2.addSeparator()
+    .addItem('gdlu get DeepL usage and costs', 'getDeepLUsage');
+
+  /* end submenu: Manage DeepL API */
+
+  TrMenu.addSubMenu(submenu2);
 
   return TrMenu;
 };
@@ -179,10 +150,12 @@ function submenu_09_translate_full() {
     ;
 };
 
+const htmlColourNames = { "orange": "#FFA500" };
+
 // translateSelectionAndAppendL uses the function
 function highlightTranslationStartEnd() {
-  //setBothTextColors("《translation(START|END)S》","#000000",htmlColourNames["orange"]);
-  //setBothTextColors("《(\\!\\!\\!|\\+)》",htmlColourNames["orange"],"#444444");
+  setBothTextColors("《translation(START|END)S》", "#000000", htmlColourNames["orange"]);
+  setBothTextColors("《(\\!\\!\\!|\\+)》", htmlColourNames["orange"], "#444444");
 };
 
 // submenu_09_translate_full (out-of-use) adds menu item 'trr translate selection and replace'
