@@ -77,6 +77,7 @@ function splitParasInDocumentB() {
     // Note: This searchStr may also match right at the end of the para, in whcih case the code below generates an empty para.
     var searchStrLength =  searchStr.length; 
     var sentenceArray = ptext.split(searchStr);
+
     /*
     Note: this regexp would be better: /\. [A-Z][a-z ]/
     However, then we cannot use split...
@@ -85,11 +86,13 @@ function splitParasInDocumentB() {
     var newArray = [];
     var newindex = 0;
     sentenceArray.forEach(function (sentence, index) {
+      
       if (index == 0) {
         newArray.push(sentence+searchStr);
         newindex = 0;
       } else {
-        if (sentence.match(/[A-Z][a-z ]/)) {
+        // if (sentence.match(/[A-Z][a-z ]/)) { // It doesn't work for non Latin alphabet
+        if (/[^\s]/.test(sentence)) {
           newindex++;
           newArray.push(sentence+searchStr);          
         } else {

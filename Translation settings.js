@@ -7,7 +7,7 @@ function showTranslationSettingsDialog() {
       return 0;
     }
   }
-  
+
   const htmlTemplate = HtmlService.createTemplateFromFile('Html Page v1');
   const htmlOutput = htmlTemplate.evaluate();
   DocumentApp.getUi().showModalDialog(htmlOutput, 'Translation settings');
@@ -40,7 +40,7 @@ function clearTranslationSettings() {
 }
 
 function saveLanguage(finalSettings) {
-  Logger.log('finalSettings=' + finalSettings);
+  Logger.log('finalSettings=' + JSON.stringify(finalSettings));
   const translationSettings = getTranslationSettings();
   let newKey;
   if (finalSettings.source.google) {
@@ -48,11 +48,18 @@ function saveLanguage(finalSettings) {
   } else {
     newKey = finalSettings.source.deepL;
   }
+
   for (let i in finalSettings.targets) {
     if (finalSettings.targets[i].google) {
       newKey += finalSettings.targets[i].google;
     } else {
       newKey += finalSettings.targets[i].deepL;
+    }
+  }
+
+  if (translationSettings.hasOwnProperty(newKey) === true) {
+    return {
+      status: 'error', message: 'Error! ' + finalSettings.sourceTarget + ' has already been added to settings.'
     }
   }
 
@@ -74,7 +81,6 @@ function saveLanguage(finalSettings) {
   onOpen();
   return result;
 }
-
 
 function retrieveSlot(slot) {
   const translationSettings = getTranslationSettings();
@@ -168,43 +174,43 @@ const translationSlots = {
     "run": function () { retrieveSlot(this); }
   },
   "s21": {
-    "slotNumber": 19,
+    "slotNumber": 20,
     "run": function () { retrieveSlot(this); }
   },
   "s22": {
-    "slotNumber": 19,
+    "slotNumber": 21,
     "run": function () { retrieveSlot(this); }
   },
   "s23": {
-    "slotNumber": 19,
+    "slotNumber": 22,
     "run": function () { retrieveSlot(this); }
   },
   "s24": {
-    "slotNumber": 19,
+    "slotNumber": 23,
     "run": function () { retrieveSlot(this); }
   },
   "s25": {
-    "slotNumber": 19,
+    "slotNumber": 24,
     "run": function () { retrieveSlot(this); }
   },
   "s26": {
-    "slotNumber": 19,
+    "slotNumber": 25,
     "run": function () { retrieveSlot(this); }
   },
   "s27": {
-    "slotNumber": 19,
+    "slotNumber": 26,
     "run": function () { retrieveSlot(this); }
   },
   "s28": {
-    "slotNumber": 19,
+    "slotNumber": 27,
     "run": function () { retrieveSlot(this); }
   },
   "s29": {
-    "slotNumber": 19,
+    "slotNumber": 28,
     "run": function () { retrieveSlot(this); }
   },
   "s30": {
-    "slotNumber": 19,
+    "slotNumber": 29,
     "run": function () { retrieveSlot(this); }
   }
 };

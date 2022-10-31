@@ -1,5 +1,4 @@
-// translateSelectionAndAppend12, translateSelectionAndAppend21 etc. use the function
-//function translateSelectionAndAppendL(origin, dest) {
+// retrieveSlot uses the function
 function translateSelectionAndAppendL(settings) {
   Logger.log(settings);
   const deepLArray = [];
@@ -15,6 +14,7 @@ function translateSelectionAndAppendL(settings) {
   // Logger.log(deepLArray);
   // Logger.log(googleArray);
 
+  // Translation settings contain DeepL
   if (deepLArray.length > 0) {
     // DeepL API key
     const activeDeeplApiKeySettings = getDeeplApiKeySettings(true).settings;
@@ -83,7 +83,7 @@ function translateSelectionAndAppendL(settings) {
     // End. Default to document API key / Default to user API key
     // End. DeepL API key
   }
-
+  // End. Translation settings contain DeepL
 
   let translationLinkText, linkStart, linkEnd, dLlinkText;
 
@@ -108,20 +108,16 @@ function translateSelectionAndAppendL(settings) {
         };
         if (element.editAsText) {
           var elementText = element.asText().getText();
-          Logger.log('elementText' + elementText);
           // This check is necessary to exclude images, which return a blank text element.
           if (elementText.length > 0) {
-            //if (elementText && elementText.match(/\w/)) {
 
             var parent = element.getParent();
             var offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
             var parPosition = parent.getChildIndex(element) + offset;
 
+            // translate using Google Translate and insert
             for (let j in googleArray) {
-              Logger.log('test g');
-              // translate using Google Translate and insert
               var out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
-              Logger.log(out);
               var glinkText = "《G:" + googleArray[j].dest + "》";
               var newPara = parent.insertParagraph(parPosition, glinkText + out);
               var style = element.editAsText().getAttributes();
@@ -130,49 +126,27 @@ function translateSelectionAndAppendL(settings) {
               newPara.editAsText().setLinkUrl(0, glinkText.length - 1, gtrURL);
             }
 
-            // translate using DeepL and insert
-            // The offset thing and bounaryStart needs to be checked...
-            //if (dest != "ar") {
-            // DE, EN-GB, EN-US, FR, IT, JA, ES, NL, PL, PT-PT, PT-BR, RU, ZH
-            // offset = 1; // offset=0 means new text is inserted before / offset=1 means new text is before after Google translate       
+            // translate using DeepL and insert    
             for (let j = 0; j < deepLArray.length; j++) {
-              Logger.log('test d');
               out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality);
-              // if (tranlationDisplay == 'in_text') {}
-              Logger.log(out);
-              //dLlinkText = "《D:" + deepLArray[j].dest + "》";
               if (deepLArray[j].formality == 'default') {
                 formality = '';
               } else {
                 formality = deepLArray[j].formality == 'less' ? ' informal' : ' formal';
               }
               dLlinkText = "《D:" + deepLArray[j].dest + formality + "》";
-              // if (j != 0) {
-              //   translationLinkText = boundaryStart + dLlinkText + out;
-              //   linkStart = boundaryStart.length + 0;
-              //   linkEnd = boundaryStart.length + dLlinkText.length;
-              // } else {
               translationLinkText = dLlinkText + out;
               linkStart = 0;
               linkEnd = dLlinkText.length - 1;
-              // }
-              //newPara = parent.insertParagraph(parPosition, boundaryStart + "《D》" + out);
               newPara = parent.insertParagraph(parPosition, translationLinkText);
               newPara.editAsText().setAttributes(style);
               var DeepLURL = getDeepLURL(elementText, deepLArray[j].origin, deepLArray[j].dest);
-              //newPara.editAsText().setLinkUrl(boundaryStart.length + 0, boundaryStart.length + 2, DeepLURL);
               newPara.editAsText().setLinkUrl(linkStart, linkEnd, DeepLURL);
             }
             if (i == 0) {
-              var newPara = parent.insertParagraph(parPosition, boundaryStart);
+              newPara = parent.insertParagraph(parPosition, boundaryStart);
             }
-            // } elsif (tranlationDisplay == 'footnote') {
-            // higher priority
-            // } elsif (tranlationDisplay == 'comment') {
-            // THis is harder because we need to preserve links... 
-            // low priority
-            // }          
-            //}
+
             // Give the source paragraph a different colour:
             style = {};
             style[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
@@ -191,7 +165,7 @@ function translateSelectionAndAppendL(settings) {
     } else {
       alert('could not get para');
     };
-  }else{
+  } else {
     alert('Error. Unexpected format style.');
   }
 }
@@ -202,158 +176,113 @@ function appendFootnotes(deepLArray, googleArray) {
 
   const namedRanges = [];
   const footnotesInfo = new Object();
-  Logger.log(deepLArray);
-  Logger.log(googleArray);
 
-  let mainTranslationAdded, footnotePlace;
+  let mainTranslationAdded, element, elementText, offset, parent, parPosition, style, formality, linkText, linkUrl, rangeName;
 
-  var p = getParagraphs(true);
+  const p = getParagraphs(true);
   if (p) {
-    for (var i = 0; i < p.length; i++) {
+    for (let i = 0; i < p.length; i++) {
       mainTranslationAdded = false;
-      var element = p[i];
+      element = p[i];
 
-      Logger.log('AtDocumentEnd?' + element.isAtDocumentEnd());
-      if (element.isAtDocumentEnd() === true) {
-        doc.getBody().appendParagraph(' ');
-        Logger.log('AtDocumentEnd');
-      } else {
-        Logger.log('Not AtDocumentEnd');
-      }
-
-      var boundaryStart = "";
-      var boundaryEnd = "";
-      if (i == 0) {
-        boundaryStart = "《translationSTARTS》";
-      };
-      if (i == p.length - 1) {
-        boundaryEnd = "《translationENDS》";
-      };
       if (element.editAsText) {
-        var elementText = element.asText().getText();
-        Logger.log('elementText' + elementText);
+        elementText = element.asText().getText();
         // This check is necessary to exclude images, which return a blank text element.
         if (elementText.length > 0) {
-          // if (elementText && elementText.match(/\w/)) {
+          offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
+          parent = element.getParent();
+          parPosition = parent.getChildIndex(element) + offset;
+          style = element.editAsText().getAttributes();
 
-          var offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
-          var parent = element.getParent();
-          var parPosition = parent.getChildIndex(element) + offset;
-          var style = element.editAsText().getAttributes();
+          // Translates using DeepL
           for (let j = 0; j < deepLArray.length; j++) {
-            Logger.log('test d');
             out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality);
-            Logger.log(out);
             if (deepLArray[j].formality == 'default') {
               formality = '';
             } else {
               formality = deepLArray[j].formality == 'less' ? ' informal' : ' formal';
             }
-            dLlinkText = "《D:" + deepLArray[j].dest + formality + "》";
-            translationLinkText = dLlinkText + out;
-            linkStart = 0;
-            linkEnd = dLlinkText.length - 1;
-            var DeepLURL = getDeepLURL(elementText, deepLArray[j].origin, deepLArray[j].dest);
+            linkText = "《D:" + deepLArray[j].dest + formality + "》";
+            linkUrl = getDeepLURL(elementText, deepLArray[j].origin, deepLArray[j].dest);
 
             if (mainTranslationAdded === false) {
-              newPara = parent.insertParagraph(parPosition, translationLinkText);
-              newPara.editAsText().setAttributes(style);
-              newPara.editAsText().setLinkUrl(linkStart, linkEnd, DeepLURL);
-
-              rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
-              footnotesInfo[rangeName].elementText = elementText;
+              rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, linkText, out, linkUrl, namedRanges, footnotesInfo);
               mainTranslationAdded = true;
             } else {
-              footnotesInfo[rangeName].tr.push({ out: out, linkText: dLlinkText, url: DeepLURL });
+              footnotesInfo[rangeName].tr.push({ out: out, linkText: linkText, url: linkUrl });
             }
           }
+          // End. Translates using DeepL
 
+          // Translates using Google Translate
           for (let j in googleArray) {
-            Logger.log('test g');
-            // translate using Google Translate and insert
-            var out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
-            Logger.log(out);
+            out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
 
-            glinkText = "《G:" + googleArray[j].dest + "》";
-            var gtrURL = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
+            linkText = "《G:" + googleArray[j].dest + "》";
+            linkUrl = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
 
             if (mainTranslationAdded === false) {
-              var newPara = parent.insertParagraph(parPosition, glinkText + out);
-
-              newPara.editAsText().setAttributes(style);
-              newPara.editAsText().setLinkUrl(0, glinkText.length - 1, gtrURL);
-              rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
-              footnotesInfo[rangeName].elementText = elementText;
+              rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, linkText, out, linkUrl, namedRanges, footnotesInfo);
               mainTranslationAdded = true;
             } else {
-              footnotesInfo[rangeName].tr.push({ out: out, linkText: glinkText, url: gtrURL });
+              footnotesInfo[rangeName].tr.push({ out: out, linkText: linkText, url: linkUrl });
             }
           }
+          // End. Translates using Google Translate
 
+          // Get formatting
+          numChildren = element.getNumChildren();
+          for (let m = 0; m < numChildren; m++) {
+            child = element.getChild(m);
 
-          offset = 1; // offset=0 means new text is inserted before / offset=1 means new text is before after Google translate       
+            indices = child.getTextAttributeIndices();
+            for (let g = 0; g < indices.length; g++) {
+              partAttributes = child.getAttributes(indices[g]);
 
-          // if (i == 0) {
-          //   var newPara = parent.insertParagraph(parPosition, boundaryStart);
-          // }
-
-          // Give the source paragraph a different colour:
-          /* style = {};
-           style[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
-           style[DocumentApp.Attribute.FOREGROUND_COLOR] = '#015610'; // null
-           element.editAsText().insertText(0, "《translationOf: ");
-           element.editAsText().insertText(element.editAsText().getText().toString().length, "》" + boundaryEnd);
-           element.editAsText().setAttributes(0, 15, style); */
-          if (p.length - 1 == i) {
-            doc.getBody().appendParagraph(' ');
+              partAttributes['start'] = indices[g];
+              if (g == indices.length - 1) {
+                partAttributes['end'] = elementText.length;
+              } else {
+                partAttributes['end'] = indices[g + 1];
+              }
+              footnotesInfo[rangeName].elementFormatting.push(partAttributes);
+            }
           }
+          // End. Get formatting
+
+          if (p.length - 1 == i) {
+            parent.insertParagraph(parPosition + 2, '《translationENDS》');
+          }
+
+          if (i == 0) {
+            parent.insertParagraph(parPosition, '《translationSTARTS》');
+          }
+
           element.removeFromParent();
-        } else {
+        } /* else {
           Logger.log('A blank text element');
-        }
+        } */
       } else {
         alert('could not edit para');
       };
-    };
+    }
     highlightTranslationStartEnd();
   } else {
     alert('could not get para');
   };
 
-  Logger.log(namedRanges);
-
-  Logger.log(footnotesInfo);
-
-  /*
-    for (let i in namedRanges) {
-      range = doc.getBody().findText(namedRanges[i]);
-      Logger.log(range);
-      if (range != null) {
-        var rangeBuilder = doc.newRange();
-        rangeBuilder.addElement(range.getElement());
-        doc.addNamedRange(namedRanges[i], rangeBuilder.build());
-      }
-    }
-  */
-
-
   doc.saveAndClose();
-  let document = Docs.Documents.get(documentId);
-  let startIndex;
-  let endIndex;
-  const requests = [];
 
+  let document = Docs.Documents.get(documentId);
+  let startIndex, endIndex;
+  const requests = [];
   const footnotesStartIndexes = new Object();
 
-  //if (document.namedRanges) {
-
-  Logger.log(document.namedRanges);
   for (let i = namedRanges.length; i >= 0; i--) {
     selectedNamedRange = namedRanges[i];
     if (document.namedRanges[selectedNamedRange]) {
       startIndex = document.namedRanges[selectedNamedRange].namedRanges[0].ranges[0].startIndex;
       endIndex = document.namedRanges[selectedNamedRange].namedRanges[0].ranges[0].endIndex;
-      Logger.log(startIndex + ' ' + endIndex);
       footnotesInfo[selectedNamedRange].startIndex = startIndex;
       footnotesInfo[selectedNamedRange].endIndex = endIndex;
       footnotesStartIndexes[startIndex] = selectedNamedRange;
@@ -372,66 +301,79 @@ function appendFootnotes(deepLArray, googleArray) {
           }
         },
         {
-          'createFootnote': {
+          createFootnote: {
             location: {
               index: startIndex
             }
           }
-        },
-
+        }
       );
     }
   }
-  //}
+
   Docs.Documents.batchUpdate({
     requests: requests
   }, documentId);
 
   document = Docs.Documents.get(documentId);
+
   // Gets footnotes
   let bodyElements = document.body.content;
   for (let i in bodyElements) {
     if (bodyElements[i].paragraph) {
       bodyElements[i].paragraph.elements.forEach(function (item) {
         if (item.footnoteReference) {
-          Logger.log(item);
-          Logger.log(item.footnoteReference);
-          // if (item.endIndex == insertStartIndex) {
-          //   footnoteId = item.footnoteReference.footnoteId;
-          //   Logger.log('our footnoteId = ' + footnoteId);
-          //   Logger.log('!!!! ' + JSON.stringify(document.footnotes[footnoteId]));
-          // }
           if (footnotesStartIndexes.hasOwnProperty(item.startIndex)) {
             footnoteId = item.footnoteReference.footnoteId;
             footnotesInfo[footnotesStartIndexes[item.startIndex]].footnoteId = footnoteId;
-          } else {
+          }/* else {
             Logger.log('wrong footnote index');
-          }
+          } */
 
-        } else {
+        } /* else {
           Logger.log('no footnoteReference');
-        }
-
+        }*/
       });
     }
   }
   // End. Gets footnotes
-  Logger.log(footnotesInfo);
 
+  // Inserts texts in footnotes, applies original formatting to text that was translated 
+  const textStyle_TRANSLATION_OF = {
+    foregroundColor: {
+      color: {
+        rgbColor: hexToRGB('#015610')
+      }
+    },
+    backgroundColor: {
+      color: {
+        rgbColor: hexToRGB('#eeeeee')
+      }
+    }
+  };
 
-  // Adds texts to footnotes
   const requests2 = [];
-  let footnoteText, linksHelper;
+  let footnoteText, linksHelper, elementFormatting, formattingObj, translationOfStart;
   for (let rangeName in footnotesInfo) {
     footnoteText = '';
     linksHelper = [];
+
+    // Concatenates all translations of the footnote
     for (let i in footnotesInfo[rangeName].tr) {
       dLlinkText = footnotesInfo[rangeName].tr[i].linkText;
       linksHelper.push({ startIndex: footnoteText.length, endIndex: footnoteText.length + dLlinkText.length, url: footnotesInfo[rangeName].tr[i].url });
 
       footnoteText += dLlinkText + ' ' + footnotesInfo[rangeName].tr[i].out + '\n';
     }
+    // End. Concatenates all translations of the footnote
+
+    // Original text
     footnoteElementPart = '《translationOf:' + footnotesInfo[rangeName].elementText + '》';
+
+    // Position where "《translationOf:" ends
+    translationOfStart = footnoteText.length + 15;
+
+    // Concatenates translations and original text
     footnoteText += footnoteElementPart;
     requests2.push(
       {
@@ -450,13 +392,36 @@ function appendFootnotes(deepLArray, googleArray) {
             endIndex: footnoteText.length - footnoteElementPart.length + 15,
             segmentId: footnotesInfo[rangeName].footnoteId,
           },
-          text_style: textStyle_FIGURE_PART_1,
-          fields: formFieldsString(textStyle_FIGURE_PART_1)
+          text_style: textStyle_TRANSLATION_OF,
+          fields: formFieldsString(textStyle_TRANSLATION_OF)
         }
       }
     );
 
+    // Applies formatting to original text
+    for (let i in footnotesInfo[rangeName].elementFormatting) {
+      elementFormatting = footnotesInfo[rangeName].elementFormatting[i];
 
+      formattingObj = createFormatObject(elementFormatting.FOREGROUND_COLOR, elementFormatting.BACKGROUND_COLOR, elementFormatting.BOLD, elementFormatting.ITALIC, elementFormatting.UNDERLINE, elementFormatting.STRIKETHROUGH, elementFormatting.LINK_URL);
+      if (formattingObj != null) {
+        requests2.push(
+          {
+            updateTextStyle: {
+              range: {
+                startIndex: footnotesInfo[rangeName].elementFormatting[i].start + translationOfStart,
+                endIndex: footnotesInfo[rangeName].elementFormatting[i].end + translationOfStart,
+                segmentId: footnotesInfo[rangeName].footnoteId,
+              },
+              text_style: formattingObj,
+              fields: formFieldsString(formattingObj)
+            }
+          }
+        );
+      }
+    }
+    // End. Applies formatting to original text
+
+    // Creates links to translate engines (for example, 《D:EN-GB》, 《G:en》 etc.)
     for (let i in linksHelper) {
       requests2.push(
         {
@@ -468,22 +433,28 @@ function appendFootnotes(deepLArray, googleArray) {
             },
             text_style: { link: { url: linksHelper[i].url } },
             fields: 'link'
-            // text_style: textStyle_FIGURE_PART_1,
-            // fields: formFieldsString(textStyle_FIGURE_PART_1)
           }
         }
       );
     }
-
+    // End. Creates links to translate engines (for example, 《D:EN-GB》, 《G:en》 etc.)
 
   }
   Docs.Documents.batchUpdate({
     requests: requests2
   }, documentId);
 
+  // End. Inserts texts in footnotes, applies original formatting to text that was translated 
+}
 
-  Logger.log(formFieldsString(textStyle_FIGURE_PART_1));
-  // End. Adds texts to footnotes
+function insertMainTranslation(doc, style, parent, parPosition, elementText, linkText, out, url, namedRanges, footnotesInfo) {
+  const newPara = parent.insertParagraph(parPosition, linkText + out);
+  newPara.editAsText().setAttributes(style);
+  newPara.editAsText().setLinkUrl(0, linkText.length - 1, url);
+  const rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
+  footnotesInfo[rangeName].elementText = elementText;
+  footnotesInfo[rangeName].elementFormatting = [];
+  return rangeName;
 }
 
 // Get object that describe styling
@@ -504,31 +475,55 @@ function formFieldsString(object) {
   return string;
 }
 
-const textStyle_FIGURE_PART_1 = {
-  foregroundColor: {
-    color: {
-      rgbColor: hexToRGB('#015610')
+// Creates object for updateTextStyle request of Doc API
+// appendFootnotes uses the function
+function createFormatObject(foregroundColor, backgroundColor, bold, italic, underline, strikethrough, link) {
+  if (foregroundColor != null || backgroundColor != null || bold != null || italic != null || underline != null || strikethrough != null || link != null) {
+    const formatObj = new Object();
+    if (link != null) {
+      formatObj.link = { url: link };
     }
-  },
-  backgroundColor: {
-    color: {
-      rgbColor: hexToRGB('#eeeeee')
+
+    if (foregroundColor != null) {
+      formatObj.foregroundColor = {
+        color: {
+          rgbColor: hexToRGB(foregroundColor)
+        }
+      };
     }
-  },
-  fontSize: {
-    magnitude: 11,
-    unit: 'PT'
-  },
-  /* bold: true,
-   italic: false,
-   weightedFontFamily: {
-     fontFamily: "Open Sans",
-     weight: 400
-   }*/
-};
+
+    if (backgroundColor != null) {
+      formatObj.backgroundColor = {
+        color: {
+          rgbColor: hexToRGB(backgroundColor)
+        }
+      };
+    }
+
+    if (bold != null) {
+      formatObj.bold = true;
+    }
+
+    if (italic != null) {
+      formatObj.italic = true;
+    }
+
+    if (underline != null) {
+      formatObj.underline = true;
+    }
+
+    if (strikethrough != null) {
+      formatObj.strikethrough = true;
+    }
+    return formatObj;
+  } else {
+    return null;
+  }
+}
 
 // The function below was adapted from https://css-tricks.com/converting-color-spaces-in-javascript/#hex-to-rgb
 // Convert Hex to RGB
+// createFormatObject uses the function
 function hexToRGB(h) {
   let r = 0, g = 0, b = 0;
 
@@ -548,85 +543,15 @@ function hexToRGB(h) {
   return { red: +(r / 255), green: +(g / 255), blue: +(b / 255) };
 }
 
+// Inserts symbol ~ at the end of paragraph where footnote will be added, creates named range
+// appendFootnotes uses the function
 function markFootnotePlace(doc, newPara, namedRanges, footnotesInfo) {
-  newParaText = newPara.getText();
-  style = {};
-  style[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
-  style[DocumentApp.Attribute.FOREGROUND_COLOR] = '#015610';
-
   const rangeBuilder = doc.newRange();
-  rangeName = 'namedRange' + new Date().getTime() + namedRanges.length;
-  footnotePlace = newPara.insertText(1, '~');
-  //newPara.editAsText().setAttributes(newParaText.length, newParaText.length + rangeName.length - 1, style);
-  //footnotePlace.setAttributes(style);
+  const rangeName = 'namedRange' + new Date().getTime() + namedRanges.length;
+  const footnotePlace = newPara.insertText(1, '~');
   rangeBuilder.addElement(footnotePlace);
   doc.addNamedRange(rangeName, rangeBuilder.build());
   namedRanges.push(rangeName);
   footnotesInfo[rangeName] = { tr: [], elementText: '' };
   return rangeName;
-}
-
-
-function getNamedRanges() {
-  const doc = DocumentApp.getActiveDocument();
-  const documentId = doc.getId();
-  let document = Docs.Documents.get(documentId);
-  let startIndex;
-  let endIndex;
-
-  if (document.namedRanges) {
-    Logger.log(document.namedRanges);
-  } else {
-    Logger.log(document.namedRanges);
-  }
-}
-
-function clearNamedRanges() {
-  const doc = DocumentApp.getActiveDocument();
-  namedRanges = doc.getNamedRanges();
-  for (let i in namedRanges) {
-    Logger.log(namedRanges[i].getName());
-    namedRanges[i].remove();
-  }
-}
-
-function testRanges() {
-  var doc = DocumentApp.getActiveDocument();
-  var rangeBuilder = doc.newRange();
-  var tables = doc.getBody().getTables();
-  for (var i = 0; i < tables.length; i++) {
-    rangeBuilder.addElement(tables[i]);
-  }
-  doc.addNamedRange('myUniquePrefix-tables', rangeBuilder.build());
-}
-
-function checkDocumentJson() {
-  const doc = DocumentApp.getActiveDocument();
-  const documentId = doc.getId();
-  let document = Docs.Documents.get(documentId);
-  let startIndex;
-  let endIndex;
-  if (document.namedRanges) {
-
-  }
-
-  Logger.log(document.body);
-
-  // Gets footnotes
-  for (let key in document) {
-    Logger.log(key);
-    if (key == 'footnotes') {
-      Logger.log(document.footnotes);
-      for (let ftn in document.footnotes) {
-        Logger.log('ftn ' + ftn);
-      }
-    }
-    // if (key == 'body'){
-    //   for (let bd in document.body){
-    //     Logger.log('bd ' + bd);
-    //   }
-    // }  
-  }
-  // End. Gets footnotes
-
 }
