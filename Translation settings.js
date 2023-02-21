@@ -29,7 +29,7 @@ function getTranslationSettings() {
   catch (error) {
     Logger.log('Needs to activate!!!');
   }
-  Logger.log(JSON.stringify(resultObj));
+  //Logger.log(JSON.stringify(resultObj));
   return resultObj;
 }
 
@@ -40,7 +40,7 @@ function clearTranslationSettings() {
 }
 
 function saveLanguage(finalSettings) {
-  Logger.log('finalSettings=' + JSON.stringify(finalSettings));
+  //Logger.log('finalSettings=' + JSON.stringify(finalSettings));
   const translationSettings = getTranslationSettings();
   let newKey;
   if (finalSettings.source.google) {
@@ -87,7 +87,7 @@ function retrieveSlot(slot) {
   const langCodes = translationSettings.menuOrder[slot.slotNumber];
   //alert(slot.slotNumber);
 
-  Logger.log(translationSettings[langCodes]);
+  //Logger.log(translationSettings[langCodes]);
 
   translateSelectionAndAppendL(translationSettings[langCodes]);
 }

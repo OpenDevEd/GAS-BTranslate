@@ -1,8 +1,10 @@
 // retrieveSlot uses the function
 function translateSelectionAndAppendL(settings) {
-  Logger.log(settings);
+  //Logger.log(settings);
   const deepLArray = [];
   const googleArray = [];
+  let translationsArray = [];
+  let translationsToInsert = [];
   for (let i in settings.targets) {
     if (settings.targets[i].deepL) {
       deepLArray.push({ origin: settings.source.deepL, dest: settings.targets[i].deepL, formality: settings.targets[i].form });
@@ -62,7 +64,6 @@ function translateSelectionAndAppendL(settings) {
         }
       }
       apiKey = selectedStorage == 'user' ? deeplApiKeyUser : deeplApiKeyDoc;
-      Logger.log('apiKey=' + apiKey);
     }
     // End. Always ask
 
@@ -89,7 +90,6 @@ function translateSelectionAndAppendL(settings) {
 
   const format = getFormatSettings(true);
   if (format.style == 'footnotes') {
-    Logger.log('footnotes');
     appendFootnotes(deepLArray, googleArray);
   } else if (format.style == 'txt') {
 
@@ -97,6 +97,9 @@ function translateSelectionAndAppendL(settings) {
     var p = getParagraphs(true);
     if (p) {
       for (var i = 0; i < p.length; i++) {
+        translationsArray = [];
+        translationsToInsert = [];
+
         var element = p[i];
         var boundaryStart = "";
         var boundaryEnd = "";
@@ -115,15 +118,15 @@ function translateSelectionAndAppendL(settings) {
             var offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
             var parPosition = parent.getChildIndex(element) + offset;
 
+            // Logger.log(deepLArray);
+            // Logger.log(googleArray);
+
             // translate using Google Translate and insert
             for (let j in googleArray) {
               var out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
               var glinkText = "《G:" + googleArray[j].dest + "》";
-              var newPara = parent.insertParagraph(parPosition, glinkText + out);
-              var style = element.editAsText().getAttributes();
-              newPara.editAsText().setAttributes(style);
               var gtrURL = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
-              newPara.editAsText().setLinkUrl(0, glinkText.length - 1, gtrURL);
+              collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL);
             }
 
             // translate using DeepL and insert    
@@ -135,14 +138,16 @@ function translateSelectionAndAppendL(settings) {
                 formality = deepLArray[j].formality == 'less' ? ' informal' : ' formal';
               }
               dLlinkText = "《D:" + deepLArray[j].dest + formality + "》";
-              translationLinkText = dLlinkText + out;
-              linkStart = 0;
-              linkEnd = dLlinkText.length - 1;
-              newPara = parent.insertParagraph(parPosition, translationLinkText);
-              newPara.editAsText().setAttributes(style);
               var DeepLURL = getDeepLURL(elementText, deepLArray[j].origin, deepLArray[j].dest);
-              newPara.editAsText().setLinkUrl(linkStart, linkEnd, DeepLURL);
+              collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL);
             }
+
+            //Logger.log(translationsToInsert);
+            var style = element.editAsText().getAttributes();
+            for (let m = 0; m < translationsToInsert.length; m++) {
+              insertTranslations(translationsToInsert[m], parent, style, parPosition);
+            }
+
             if (i == 0) {
               newPara = parent.insertParagraph(parPosition, boundaryStart);
             }
@@ -155,7 +160,7 @@ function translateSelectionAndAppendL(settings) {
             element.editAsText().insertText(element.editAsText().getText().toString().length, "》" + boundaryEnd);
             element.editAsText().setAttributes(0, 15, style);
           } else {
-            Logger.log('A blank text element');
+            //Logger.log('A blank text element');
           }
         } else {
           alert('could not edit para');
@@ -175,14 +180,17 @@ function appendFootnotes(deepLArray, googleArray) {
   const documentId = doc.getId();
 
   const namedRanges = [];
+  let translationsArray = [], translationsToInsert = [];
   const footnotesInfo = new Object();
 
-  let mainTranslationAdded, element, elementText, offset, parent, parPosition, style, formality, linkText, linkUrl, rangeName;
+  let element, elementText, offset, parent, parPosition, style, formality, linkText, linkUrl, rangeName, newPara;
 
   const p = getParagraphs(true);
   if (p) {
     for (let i = 0; i < p.length; i++) {
       mainTranslationAdded = false;
+      translationsArray = [];
+      translationsToInsert = [];
       element = p[i];
 
       if (element.editAsText) {
@@ -204,13 +212,7 @@ function appendFootnotes(deepLArray, googleArray) {
             }
             linkText = "《D:" + deepLArray[j].dest + formality + "》";
             linkUrl = getDeepLURL(elementText, deepLArray[j].origin, deepLArray[j].dest);
-
-            if (mainTranslationAdded === false) {
-              rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, linkText, out, linkUrl, namedRanges, footnotesInfo);
-              mainTranslationAdded = true;
-            } else {
-              footnotesInfo[rangeName].tr.push({ out: out, linkText: linkText, url: linkUrl });
-            }
+            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl);
           }
           // End. Translates using DeepL
 
@@ -220,15 +222,26 @@ function appendFootnotes(deepLArray, googleArray) {
 
             linkText = "《G:" + googleArray[j].dest + "》";
             linkUrl = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
-
-            if (mainTranslationAdded === false) {
-              rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, linkText, out, linkUrl, namedRanges, footnotesInfo);
-              mainTranslationAdded = true;
-            } else {
-              footnotesInfo[rangeName].tr.push({ out: out, linkText: linkText, url: linkUrl });
-            }
+            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl);
           }
           // End. Translates using Google Translate
+
+          // rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, translationsToInsert[0], namedRanges, footnotesInfo);
+
+          // Inserts the main translation
+          newPara = insertTranslations(translationsToInsert[0], parent, style, parPosition);
+          rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
+          footnotesInfo[rangeName].elementText = elementText;
+          footnotesInfo[rangeName].elementFormatting = [];
+          // End. Inserts the main translation
+
+
+          for (let m = 1; m < translationsToInsert.length; m++) {
+            linkUrl = translationsToInsert[m].translators[0].url;
+            linkText = translationsToInsert[m].translators[0].linkText;
+            //footnotesInfo[rangeName].tr.push({ out: translationsToInsert[m].out, linkText: linkText, url: linkUrl });
+            footnotesInfo[rangeName].tr.push(translationsToInsert[m]);
+          }
 
           // Get formatting
           numChildren = element.getNumChildren();
@@ -272,6 +285,8 @@ function appendFootnotes(deepLArray, googleArray) {
   };
 
   doc.saveAndClose();
+
+  //Logger.log(translationsToInsert);
 
   let document = Docs.Documents.get(documentId);
   let startIndex, endIndex;
@@ -358,12 +373,25 @@ function appendFootnotes(deepLArray, googleArray) {
     footnoteText = '';
     linksHelper = [];
 
+    //Logger.log(footnotesInfo);
+
     // Concatenates all translations of the footnote
     for (let i in footnotesInfo[rangeName].tr) {
-      dLlinkText = footnotesInfo[rangeName].tr[i].linkText;
-      linksHelper.push({ startIndex: footnoteText.length, endIndex: footnoteText.length + dLlinkText.length, url: footnotesInfo[rangeName].tr[i].url });
 
-      footnoteText += dLlinkText + ' ' + footnotesInfo[rangeName].tr[i].out + '\n';
+      translatorsLinks = '';
+      startEndArray = [];
+      for (let k = 0; k < footnotesInfo[rangeName].tr[i].translators.length; k++) {
+        linkText = footnotesInfo[rangeName].tr[i].translators[k].linkText;
+        startEndArray.push({ start: translatorsLinks.length, url: footnotesInfo[rangeName].tr[i].translators[k].url });
+        translatorsLinks += linkText + ' ';
+        startEndArray[startEndArray.length - 1]['end'] = translatorsLinks.length - 2;
+      }
+
+
+      dLlinkText = footnotesInfo[rangeName].tr[i].linkText;
+      //linksHelper.push({ startIndex: footnoteText.length, endIndex: footnoteText.length + dLlinkText.length, url: footnotesInfo[rangeName].tr[i].url });
+
+      footnoteText += translatorsLinks + ' ' + footnotesInfo[rangeName].tr[i].out + '\n';
     }
     // End. Concatenates all translations of the footnote
 
@@ -445,16 +473,6 @@ function appendFootnotes(deepLArray, googleArray) {
   }, documentId);
 
   // End. Inserts texts in footnotes, applies original formatting to text that was translated 
-}
-
-function insertMainTranslation(doc, style, parent, parPosition, elementText, linkText, out, url, namedRanges, footnotesInfo) {
-  const newPara = parent.insertParagraph(parPosition, linkText + out);
-  newPara.editAsText().setAttributes(style);
-  newPara.editAsText().setLinkUrl(0, linkText.length - 1, url);
-  const rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
-  footnotesInfo[rangeName].elementText = elementText;
-  footnotesInfo[rangeName].elementFormatting = [];
-  return rangeName;
 }
 
 // Get object that describe styling
@@ -554,4 +572,38 @@ function markFootnotePlace(doc, newPara, namedRanges, footnotesInfo) {
   namedRanges.push(rangeName);
   footnotesInfo[rangeName] = { tr: [], elementText: '' };
   return rangeName;
+}
+
+// Detects identical translations
+// appendFootnotes, translateSelectionAndAppendL use the function
+function collectTranslations(translationsArray, translationsToInsert, out, linkText, url) {
+  const index = translationsArray.indexOf(out);
+  if (index == -1) {
+    //Logger.log('New: ' + out + ' ' + linkText + ' ' + JSON.stringify(translationsArray));
+    translationsArray.push(out);
+    translationsToInsert.push({ out: out, translators: [{ linkText: linkText, url: url }] });
+  } else {
+    //Logger.log('Already added: index = ' + index + ' ' + out + ' ' + linkText + ' ' + JSON.stringify(translationsArray));
+    translationsToInsert[index].translators.unshift({ linkText: linkText, url: url });
+  }
+}
+
+// 1. Inserts translations and original for 'text' workflow
+// 2. Inserts the main translation for 'footnote' workflow
+// translateSelectionAndAppendL, appendFootnotes use the function
+function insertTranslations(translationToInsert, parent, style, parPosition) {
+  translatorsLinks = '';
+  startEndArray = [];
+  for (let k = 0; k < translationToInsert.translators.length; k++) {
+    linkText = translationToInsert.translators[k].linkText;
+    startEndArray.push({ start: translatorsLinks.length, url: translationToInsert.translators[k].url });
+    translatorsLinks += linkText + ' ';
+    startEndArray[startEndArray.length - 1]['end'] = translatorsLinks.length - 2;
+  }
+  newPara = parent.insertParagraph(parPosition, translatorsLinks + translationToInsert.out);
+  newPara.editAsText().setAttributes(style);
+  for (let l = 0; l < startEndArray.length; l++) {
+    newPara.editAsText().setLinkUrl(startEndArray[l].start, startEndArray[l].end, startEndArray[l].url);
+  }
+  return newPara;
 }
