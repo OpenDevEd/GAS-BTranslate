@@ -100,7 +100,7 @@ function splitParasInDocumentB() {
         };
       };
     });
-    alert(newArray);
+    // alert(newArray);
     sentenceArray = newArray;
     if (sentenceArray.length > 1) {
       sentenceArray.forEach(function (sentence, index) {

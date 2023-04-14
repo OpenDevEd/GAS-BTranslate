@@ -7,7 +7,7 @@ function submenu_09_translate_basic(e) {
   if (e && e.authMode == ScriptApp.AuthMode.NONE) {
     actionNameUser = 'Add/change';
     actionNameDoc = 'Add/change';
-    TrMenu.addItem('Activate add-on', 'activateAddOn');
+    TrMenu.addItem('Activate menu', 'activateMenu');
     tryToRetrieveProperties = false;
   } else {
     const deeplApiKeyUser = getDeepLAPIkey('user');
@@ -116,7 +116,7 @@ function submenu_09_translate_basic(e) {
   return TrMenu;
 };
 
-function activateAddOn() {
+function activateMenu() {
   onOpen();
 }
 
