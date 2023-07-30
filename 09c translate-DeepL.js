@@ -22,9 +22,9 @@ function getDeepLURL(txt, from, to) {
 
 // Menu item 'gdlu get DeepL usage and costs'
 function getDeepLUsage() {
-  const apikey = getDeepLAPIkey();
+  const apikey = getDeepLAPIkey('user');
   if (apikey == null) {
-    alert('Please enable DeepL by entering API key.');
+    alert('Add DeepL API key for user / all documents.');
     return 0;
   }
   var url = "https://api.deepl.com/v2/usage?auth_key=" + apikey
