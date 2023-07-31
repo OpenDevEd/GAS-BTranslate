@@ -6,21 +6,21 @@ function handleFormSubmit(formObject) {
   let toDoEl = document.getElementById('toDo');
   toDoEl.scroll({ top: 0, behavior: 'smooth' });
   let toDo = toDoEl.value;
-  console.log('toDo=' + toDo);
+  //console.log('toDo=' + toDo);
 
   let savedSourceEl = document.getElementById('savedSource');
   let savedSource = savedSourceEl.value;
-  console.log('savedSource=' + savedSource);
+  //console.log('savedSource=' + savedSource);
 
   let savedTargetEl = document.getElementById('savedTarget');
   let savedTarget = savedTargetEl.value;
-  console.log('savedTarget=' + savedTarget);
+  //console.log('savedTarget=' + savedTarget);
 
   if (toDo == 'selectTarget' || toDo == 'selectNext') {
     selectedSourceOrTarget = document.querySelector('input[name="source"]:checked').value;
-    console.log('selectedSourceOrTarget=' + selectedSourceOrTarget);
+    //console.log('selectedSourceOrTarget=' + selectedSourceOrTarget);
   }
-  console.log('----------------');
+  //console.log('----------------');
 
   var divToDoHeader = document.getElementById('toDoHeader');
   var divHeader = document.getElementById('header');
@@ -28,7 +28,7 @@ function handleFormSubmit(formObject) {
   if (toDo == 'selectTarget') {
     document.getElementById('header').scroll({ top: 0, behavior: 'smooth' });
 
-    createTargetList();
+    createTargetList(selectedSourceOrTarget);
 
     toDoEl.value = 'selectNext';
 
@@ -46,7 +46,7 @@ function handleFormSubmit(formObject) {
 
     if ((SOURCES[source]['deepL'] == null && TARGETS[target]['google'] != null) || (TARGETS[target]['deepL'] == null && TARGETS[target]['google'] != null)) {
       toDoEl.value = 'confirm';
-      console.log('confirm');
+      //console.log('confirm');
       divToDoHeader.innerHTML = 'Please confirm';
       finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [{ "name": target, "google": TARGETS[target]['google'] }] };
     } else {
@@ -73,7 +73,7 @@ function handleFormSubmit(formObject) {
         finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [{ "name": target, "google": trGoogle['google'] }] };
       } else {
         toDoEl.value = 'selectSettings';
-        console.log('selectSettings');
+        //console.log('selectSettings');
         divToDoHeader.innerHTML = "Select the translation engines. For DeepL, an API key is required. For 'footnote mode', the first of these engines provides the main translation, the other engines provide the text for the footnotes.";
         createCheckboxList(allTranslators, source, target);
         document.getElementById('submitButton').disabled = true;
@@ -88,7 +88,7 @@ function handleFormSubmit(formObject) {
     //checkbox.name = 'allTranslators';
     const allChecked = document.querySelectorAll('input[name=allTranslators]:checked');
     const targetsArray = Array.from(allChecked).map(checkbox => checkbox.value);
-    console.log(targetsArray);
+    //console.log(targetsArray);
     finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [] };
     for (let i in targetsArray) {
       finalSettings.targets.push(JSON.parse(targetsArray[i]));
@@ -100,7 +100,7 @@ function handleFormSubmit(formObject) {
   } else {
     divToDoHeader.innerHTML = "";
 
-    console.log(finalSettings);
+    //console.log(finalSettings);
 
     document.getElementById('submitButton').value = "Saving...";
     disableElements('input');
@@ -186,8 +186,10 @@ function clearFormGroup() {
   }
 }
 
-function createTargetList() {
+function createTargetList(selectedSource) {
+  //console.log('selectedSource %s', selectedSource);
   clearFormGroup();
+  delete TARGETS[selectedSource];
   createRadioList(TARGETS);
 }
 

@@ -69,7 +69,7 @@ function saveLanguage(finalSettings) {
     translationSettings['menuOrder'] = [];
   }
   translationSettings['menuOrder'].push(newKey);
-  console.log(translationSettings);
+  //Logger.log(translationSettings);
 
   const userProperties = PropertiesService.getUserProperties();
   userProperties.setProperty('TRANSLATION_SETTINGS', JSON.stringify(translationSettings));
@@ -77,7 +77,7 @@ function saveLanguage(finalSettings) {
   const result = {
     status: 'ok'
   };
-  console.log(finalSettings);
+  //Logger.log(finalSettings);
   onOpen();
   return result;
 }
