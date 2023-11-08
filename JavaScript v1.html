@@ -1,67 +1,95 @@
 <script>
   let finalSettings;
-function handleFormSubmit(formObject) {
-  // google.script.run.withSuccessHandler(checkResults).withFailureHandler(onFailure).processParticipantsFormV2(formObject);
-  let source, target, selectedSourceOrTarget;
-  let toDoEl = document.getElementById('toDo');
-  toDoEl.scroll({ top: 0, behavior: 'smooth' });
-  let toDo = toDoEl.value;
-  //console.log('toDo=' + toDo);
+  function handleFormSubmit(formObject) {
+    // google.script.run.withSuccessHandler(checkResults).withFailureHandler(onFailure).processParticipantsFormV2(formObject);
+    let source, target, selectedSourceOrTarget;
+    let toDoEl = document.getElementById('toDo');
+    toDoEl.scroll({ top: 0, behavior: 'smooth' });
+    let toDo = toDoEl.value;
+    //console.log('toDo=' + toDo);
 
-  let savedSourceEl = document.getElementById('savedSource');
-  let savedSource = savedSourceEl.value;
-  //console.log('savedSource=' + savedSource);
+    let savedSourceEl = document.getElementById('savedSource');
+    let savedSource = savedSourceEl.value;
+    //console.log('savedSource=' + savedSource);
 
-  let savedTargetEl = document.getElementById('savedTarget');
-  let savedTarget = savedTargetEl.value;
-  //console.log('savedTarget=' + savedTarget);
+    let savedTargetEl = document.getElementById('savedTarget');
+    let savedTarget = savedTargetEl.value;
+    //console.log('savedTarget=' + savedTarget);
 
-  if (toDo == 'selectTarget' || toDo == 'selectNext') {
-    selectedSourceOrTarget = document.querySelector('input[name="source"]:checked').value;
-    //console.log('selectedSourceOrTarget=' + selectedSourceOrTarget);
-  }
-  //console.log('----------------');
+    if (toDo == 'selectTarget' || toDo == 'selectNext') {
+      selectedSourceOrTarget = document.querySelector('input[name="source"]:checked').value;
+      //console.log('selectedSourceOrTarget=' + selectedSourceOrTarget);
+    }
+    //console.log('----------------');
 
-  var divToDoHeader = document.getElementById('toDoHeader');
-  var divHeader = document.getElementById('header');
+    var divToDoHeader = document.getElementById('toDoHeader');
+    var divHeader = document.getElementById('header');
 
-  if (toDo == 'selectTarget') {
-    document.getElementById('header').scroll({ top: 0, behavior: 'smooth' });
+    if (toDo == 'selectTarget') {
+      document.getElementById('header').scroll({ top: 0, behavior: 'smooth' });
 
-    createTargetList(selectedSourceOrTarget);
+      createTargetList(selectedSourceOrTarget);
 
-    toDoEl.value = 'selectNext';
+      toDoEl.value = 'selectNext';
 
-    divHeader.innerHTML = "Source: " + selectedSourceOrTarget;
-    divToDoHeader.innerHTML = "Select the target language(s). Scroll down and select Next.";
-    savedSourceEl.value = selectedSourceOrTarget;
-  } else if (toDo == 'selectNext') {
-    clearFormGroup();
+      divHeader.innerHTML = "Source: " + selectedSourceOrTarget;
+      divToDoHeader.innerHTML = "Select the target language(s). Scroll down and select Next.";
+      savedSourceEl.value = selectedSourceOrTarget;
+    } else if (toDo == 'selectNext') {
+      clearFormGroup();
 
-    source = savedSource;
-    target = selectedSourceOrTarget;
+      source = savedSource;
+      target = selectedSourceOrTarget;
 
-    divHeader.innerHTML = "Source: " + source + " ->  Target: " + target;
+      divHeader.innerHTML = "Source: " + source + " ->  Target: " + target;
 
-
-    if ((SOURCES[source]['deepL'] == null && TARGETS[target]['google'] != null) || (TARGETS[target]['deepL'] == null && TARGETS[target]['google'] != null)) {
-      toDoEl.value = 'confirm';
-      //console.log('confirm');
-      divToDoHeader.innerHTML = 'Please confirm';
-      finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [{ "name": target, "google": TARGETS[target]['google'] }] };
-    } else {
-      // Translators list
       const sourceObj = SOURCES[source];
       const targetObj = TARGETS[target];
 
+      // Add openAI to source and target object
+      if (sourceObj.google) {
+        sourceObj.openAI = sourceObj.google;
+      }
+
+      // allLanguages will be array of target languages
       let allLanguages;
+      if (targetObj.google) {
+        // Not Chinese, English, Portuguese (not language groups)
+        targetObj.openAI = targetObj.google;
+      } else {
+        // Chinese, English, Portuguese (groups)
+        if (!targetObj.deepL) {
+          allLanguages = Object.keys(targetObj);
+          for (let i in allLanguages) {
+            if (targetObj[allLanguages[i]].deepL && allLanguages[i].includes('Portuguese')) {
+              targetObj[allLanguages[i]].openAI = targetObj[allLanguages[i]].deepL;
+            } else if (targetObj[allLanguages[i]].google && !allLanguages[i].includes('Portuguese')) {
+              targetObj[allLanguages[i]].openAI = targetObj[allLanguages[i]].google;
+            }
+          }
+        }
+      }
+      // End. Add openAI to source and target object
+
+      // if ((SOURCES[source]['deepL'] == null && TARGETS[target]['google'] != null) || (TARGETS[target]['deepL'] == null && TARGETS[target]['google'] != null)) {
+      //   toDoEl.value = 'confirm';
+      //   //console.log('confirm');
+      //   divToDoHeader.innerHTML = 'Please confirm';
+      //   finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [{ "name": target, "google": TARGETS[target]['google'] }] };
+      // } else {
+      // Translators list
+
+      // console.log(sourceObj);
+      // console.log(targetObj);
+
       const allTranslators = [];
-      if (targetObj.deepL == null) {
-        allLanguages = Object.keys(targetObj);
+      if (targetObj.deepL == null && targetObj.openAI == null && targetObj.google == null) {
+        // Chinese, English, Portuguese language groups
         for (let i in allLanguages) {
           translatorsList(allTranslators, targetObj[allLanguages[i]], target, sourceObj, allLanguages[i]);
         }
       } else {
+        // Not Chinese, English, Portuguese (not language groups)
         translatorsList(allTranslators, targetObj, target, sourceObj, target);
       }
       // End. Translators list
@@ -74,244 +102,227 @@ function handleFormSubmit(formObject) {
       } else {
         toDoEl.value = 'selectSettings';
         //console.log('selectSettings');
-        divToDoHeader.innerHTML = "Select the translation engines. For DeepL, an API key is required. For 'footnote mode', the first of these engines provides the main translation, the other engines provide the text for the footnotes.";
+        divToDoHeader.innerHTML = "Select the translation engines. For DeepL and ChatGPT, API keys are required. For 'footnote mode', the first of these engines provides the main translation, the other engines provide the text for the footnotes.";
         createCheckboxList(allTranslators, source, target);
         document.getElementById('submitButton').disabled = true;
       }
+      //}
+
+      savedTargetEl.value = selectedSourceOrTarget;
+    } else if (toDo == 'selectSettings') {
+      source = savedSource;
+      target = savedTarget;
+      divToDoHeader.innerHTML = 'Please confirm';
+      //checkbox.name = 'allTranslators';
+      const allChecked = document.querySelectorAll('input[name=allTranslators]:checked');
+      const targetsArray = Array.from(allChecked).map(checkbox => checkbox.value);
+      //console.log(targetsArray);
+      finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [] };
+      for (let i in targetsArray) {
+        finalSettings.targets.push(JSON.parse(targetsArray[i]));
+      }
+      clearFormGroup();
+      createConfirmationList(source, target, targetsArray);
+      toDoEl.value = 'confirm';
+      document.getElementById('submitButton').value = 'Save';
+    } else {
+      divToDoHeader.innerHTML = "";
+
+      //console.log(finalSettings);
+
+      document.getElementById('submitButton').value = "Saving...";
+      disableElements('input');
+
+      google.script.run.withSuccessHandler(checkResults).withFailureHandler(onFailure).saveLanguage(finalSettings);
     }
 
-    savedTargetEl.value = selectedSourceOrTarget;
-  } else if (toDo == 'selectSettings') {
-    source = savedSource;
-    target = savedTarget;
-    divToDoHeader.innerHTML = 'Please confirm';
-    //checkbox.name = 'allTranslators';
-    const allChecked = document.querySelectorAll('input[name=allTranslators]:checked');
-    const targetsArray = Array.from(allChecked).map(checkbox => checkbox.value);
-    //console.log(targetsArray);
-    finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [] };
-    for (let i in targetsArray) {
-      finalSettings.targets.push(JSON.parse(targetsArray[i]));
-    }
-    clearFormGroup();
-    createConfirmationList(source, target, targetsArray);
-    toDoEl.value = 'confirm';
-    document.getElementById('submitButton').value = 'Save';
-  } else {
-    divToDoHeader.innerHTML = "";
-
-    //console.log(finalSettings);
-
-    document.getElementById('submitButton').value = "Saving...";
-    disableElements('input');
-
-    google.script.run.withSuccessHandler(checkResults).withFailureHandler(onFailure).saveLanguage(finalSettings);
-  }
-
-
-  //enableForm();
-}
-
-function closeIt() {
-  google.script.host.close();
-}
-
-
-function onFailure(error) {
-  var div = document.getElementById('output');
-  div.innerHTML = "Google Apps Script error: " + error;
-}
-
-function checkResults(result) {
-  if (result.status == 'error') {
-    var div = document.getElementById('output');
-    div.innerHTML = result.message;
 
     //enableForm();
-  } else {
-    closeIt();
   }
 
-}
-
-function preventFormSubmit() { // Prevents redirct of form; see --> https://developers.google.com/apps-script/guides/html/communication#forms
-  var forms = document.querySelectorAll('form');
-  for (var i = 0; i < forms.length; i++) {
-    forms[i].addEventListener('submit', function (event) {
-      event.preventDefault();
-    });
+  function closeIt() {
+    google.script.host.close();
   }
-}
 
-window.addEventListener('load', preventFormSubmit);
 
-function loading() {
-  document.getElementById('submitButton').value = "Loading...";
-  disableElements('input');
-  disableElements('textarea');
-}
-
-function disableElements(tagname) {
-  var inputs = document.getElementsByTagName(tagname);
-  for (i = 0; i < inputs.length; i++) {
-    inputs[i].disabled = true;
+  function onFailure(error) {
+    var div = document.getElementById('output');
+    div.innerHTML = "Google Apps Script error: " + error;
   }
-}
 
-function enableForm() {
-  document.getElementById('submitButton').value = "Submit";
-  enableElements('input');
-  //enableElements('textarea');
-}
+  function checkResults(result) {
+    if (result.status == 'error') {
+      var div = document.getElementById('output');
+      div.innerHTML = result.message;
 
-function enableElements(tagname) {
-  var inputs = document.getElementsByTagName(tagname);
-  for (i = 0; i < inputs.length; i++) {
-    inputs[i].disabled = false;
-  }
-}
-
-const SOURCES = {"Afrikaans":{"google":"af"},"Albanian":{"google":"sq"},"Amharic":{"google":"am"},"Arabic":{"google":"ar"},"Armenian":{"google":"hy"},"Assamese":{"google":"as"},"Aymara":{"google":"ay"},"Azerbaijani":{"google":"az"},"Bambara":{"google":"bm"},"Basque":{"google":"eu"},"Belarusian":{"google":"be"},"Bengali":{"google":"bn"},"Bhojpuri":{"google":"bho"},"Bosnian":{"google":"bs"},"Bulgarian":{"deepL":"BG","google":"bg"},"Catalan":{"google":"ca"},"Cebuano":{"google":"ceb"},"Chinese":{"deepL":"ZH","google":"zh"},"Chinese (Simplified)":{"google":"zh-CN"},"Chinese (Traditional)":{"google":"zh-TW"},"Corsican":{"google":"co"},"Croatian":{"google":"hr"},"Czech":{"deepL":"CS","google":"cs"},"Danish":{"deepL":"DA","google":"da"},"Dhivehi":{"google":"dv"},"Dogri":{"google":"doi"},"Dutch":{"deepL":"NL","google":"nl"},"English":{"deepL":"EN","google":"en"},"Esperanto":{"google":"eo"},"Estonian":{"deepL":"ET","google":"et"},"Ewe":{"google":"ee"},"Finnish":{"deepL":"FI","google":"fi"},"French":{"deepL":"FR","google":"fr"},"Frisian":{"google":"fy"},"Galician":{"google":"gl"},"Georgian":{"google":"ka"},"German":{"deepL":"DE","google":"de"},"Greek":{"deepL":"EL","google":"el"},"Guarani":{"google":"gn"},"Gujarati":{"google":"gu"},"Haitian Creole":{"google":"ht"},"Hausa":{"google":"ha"},"Hawaiian":{"google":"haw"},"Hebrew":{"google":"he"},"Hindi":{"google":"hi"},"Hmong":{"google":"hmn"},"Hungarian":{"deepL":"HU","google":"hu"},"Icelandic":{"google":"is"},"Igbo":{"google":"ig"},"Ilocano":{"google":"ilo"},"Indonesian":{"deepL":"ID","google":"id"},"Irish":{"google":"ga"},"Italian":{"deepL":"IT","google":"it"},"Japanese":{"deepL":"JA","google":"ja"},"Javanese":{"google":"jv"},"Kannada":{"google":"kn"},"Kazakh":{"google":"kk"},"Khmer":{"google":"km"},"Kinyarwanda":{"google":"rw"},"Konkani":{"google":"gom"},"Korean":{"google":"ko"},"Krio":{"google":"kri"},"Kurdish":{"google":"ku"},"Kurdish (Sorani)":{"google":"ckb"},"Kyrgyz":{"google":"ky"},"Lao":{"google":"lo"},"Latin":{"google":"la"},"Latvian":{"deepL":"LV","google":"lv"},"Lingala":{"google":"ln"},"Lithuanian":{"deepL":"LT","google":"lt"},"Luganda":{"google":"lg"},"Luxembourgish":{"google":"lb"},"Macedonian":{"google":"mk"},"Maithili":{"google":"mai"},"Malagasy":{"google":"mg"},"Malay":{"google":"ms"},"Malayalam":{"google":"ml"},"Maltese":{"google":"mt"},"Maori":{"google":"mi"},"Marathi":{"google":"mr"},"Meiteilon (Manipuri)":{"google":"mni-Mtei"},"Mizo":{"google":"lus"},"Mongolian":{"google":"mn"},"Myanmar (Burmese)":{"google":"my"},"Nepali":{"google":"ne"},"Norwegian":{"google":"no"},"Nyanja (Chichewa)":{"google":"ny"},"Odia (Oriya)":{"google":"or"},"Oromo":{"google":"om"},"Pashto":{"google":"ps"},"Persian":{"google":"fa"},"Polish":{"deepL":"PL","google":"pl"},"Portuguese":{"deepL":"PT"},"Portuguese (Portugal, Brazil)":{"google":"pt"},"Punjabi":{"google":"pa"},"Quechua":{"google":"qu"},"Romanian":{"deepL":"RO","google":"ro"},"Russian":{"deepL":"RU","google":"ru"},"Samoan":{"google":"sm"},"Sanskrit":{"google":"sa"},"Scots Gaelic":{"google":"gd"},"Sepedi":{"google":"nso"},"Serbian":{"google":"sr"},"Sesotho":{"google":"st"},"Shona":{"google":"sn"},"Sindhi":{"google":"sd"},"Sinhala (Sinhalese)":{"google":"si"},"Slovak":{"deepL":"SK","google":"sk"},"Slovenian":{"deepL":"SL","google":"sl"},"Somali":{"google":"so"},"Spanish":{"deepL":"ES","google":"es"},"Sundanese":{"google":"su"},"Swahili":{"google":"sw"},"Swedish":{"deepL":"SV","google":"sv"},"Tagalog (Filipino)":{"google":"tl"},"Tajik":{"google":"tg"},"Tamil":{"google":"ta"},"Tatar":{"google":"tt"},"Telugu":{"google":"te"},"Thai":{"google":"th"},"Tigrinya":{"google":"ti"},"Tsonga":{"google":"ts"},"Turkish":{"deepL":"TR","google":"tr"},"Turkmen":{"google":"tk"},"Twi (Akan)":{"google":"ak"},"Ukrainian":{"deepL":"UK","google":"uk"},"Urdu":{"google":"ur"},"Uyghur":{"google":"ug"},"Uzbek":{"google":"uz"},"Vietnamese":{"google":"vi"},"Welsh":{"google":"cy"},"Xhosa":{"google":"xh"},"Yiddish":{"google":"yi"},"Yoruba":{"google":"yo"},"Zulu":{"google":"zu"}};
-
-const TARGETS = {"Afrikaans":{"google":"af"},"Albanian":{"google":"sq"},"Amharic":{"google":"am"},"Arabic":{"google":"ar"},"Armenian":{"google":"hy"},"Assamese":{"google":"as"},"Aymara":{"google":"ay"},"Azerbaijani":{"google":"az"},"Bambara":{"google":"bm"},"Basque":{"google":"eu"},"Belarusian":{"google":"be"},"Bengali":{"google":"bn"},"Bhojpuri":{"google":"bho"},"Bosnian":{"google":"bs"},"Bulgarian":{"deepL":"BG","google":"bg"},"Catalan":{"google":"ca"},"Cebuano":{"google":"ceb"},"Chinese":{"Chinese (simplified)":{"deepL":"ZH","google":"zh-CN"},"Chinese (traditional)":{"google":"zh-TW"}},"Corsican":{"google":"co"},"Croatian":{"google":"hr"},"Czech":{"deepL":"CS","google":"cs"},"Danish":{"deepL":"DA","google":"da"},"Dhivehi":{"google":"dv"},"Dogri":{"google":"doi"},"Dutch":{"deepL":"NL","dlFormality":true,"google":"nl"},"English":{"English (American)":{"deepL":"EN-US"},"English (British)":{"deepL":"EN-GB"},"English":{"google":"en"}},"Esperanto":{"google":"eo"},"Estonian":{"deepL":"ET","google":"et"},"Ewe":{"google":"ee"},"Finnish":{"deepL":"FI","google":"fi"},"French":{"deepL":"FR","dlFormality":true,"google":"fr"},"Frisian":{"google":"fy"},"Galician":{"google":"gl"},"Georgian":{"google":"ka"},"German":{"deepL":"DE","dlFormality":true,"google":"de"},"Greek":{"deepL":"EL","google":"el"},"Guarani":{"google":"gn"},"Gujarati":{"google":"gu"},"Haitian Creole":{"google":"ht"},"Hausa":{"google":"ha"},"Hawaiian":{"google":"haw"},"Hebrew":{"google":"he"},"Hindi":{"google":"hi"},"Hmong":{"google":"hmn"},"Hungarian":{"deepL":"HU","google":"hu"},"Icelandic":{"google":"is"},"Igbo":{"google":"ig"},"Ilocano":{"google":"ilo"},"Indonesian":{"deepL":"ID","google":"id"},"Irish":{"google":"ga"},"Italian":{"deepL":"IT","dlFormality":true,"google":"it"},"Japanese":{"deepL":"JA","google":"ja"},"Javanese":{"google":"jv"},"Kannada":{"google":"kn"},"Kazakh":{"google":"kk"},"Khmer":{"google":"km"},"Kinyarwanda":{"google":"rw"},"Konkani":{"google":"gom"},"Korean":{"google":"ko"},"Krio":{"google":"kri"},"Kurdish":{"google":"ku"},"Kurdish (Sorani)":{"google":"ckb"},"Kyrgyz":{"google":"ky"},"Lao":{"google":"lo"},"Latin":{"google":"la"},"Latvian":{"deepL":"LV","google":"lv"},"Lingala":{"google":"ln"},"Lithuanian":{"deepL":"LT","google":"lt"},"Luganda":{"google":"lg"},"Luxembourgish":{"google":"lb"},"Macedonian":{"google":"mk"},"Maithili":{"google":"mai"},"Malagasy":{"google":"mg"},"Malay":{"google":"ms"},"Malayalam":{"google":"ml"},"Maltese":{"google":"mt"},"Maori":{"google":"mi"},"Marathi":{"google":"mr"},"Meiteilon (Manipuri)":{"google":"mni-Mtei"},"Mizo":{"google":"lus"},"Mongolian":{"google":"mn"},"Myanmar (Burmese)":{"google":"my"},"Nepali":{"google":"ne"},"Norwegian":{"google":"no"},"Nyanja (Chichewa)":{"google":"ny"},"Odia (Oriya)":{"google":"or"},"Oromo":{"google":"om"},"Pashto":{"google":"ps"},"Persian":{"google":"fa"},"Polish":{"deepL":"PL","dlFormality":true,"google":"pl"},"Portuguese":{"Portuguese (Brazilian)":{"deepL":"PT-BR","dlFormality":true},"Portuguese (European)":{"deepL":"PT-PT","dlFormality":true},"Portuguese (Portugal, Brazil)":{"google":"pt"}},"Punjabi":{"google":"pa"},"Quechua":{"google":"qu"},"Romanian":{"deepL":"RO","google":"ro"},"Russian":{"deepL":"RU","dlFormality":true,"google":"ru"},"Samoan":{"google":"sm"},"Sanskrit":{"google":"sa"},"Scots Gaelic":{"google":"gd"},"Sepedi":{"google":"nso"},"Serbian":{"google":"sr"},"Sesotho":{"google":"st"},"Shona":{"google":"sn"},"Sindhi":{"google":"sd"},"Sinhala (Sinhalese)":{"google":"si"},"Slovak":{"deepL":"SK","google":"sk"},"Slovenian":{"deepL":"SL","google":"sl"},"Somali":{"google":"so"},"Spanish":{"deepL":"ES","dlFormality":true,"google":"es"},"Sundanese":{"google":"su"},"Swahili":{"google":"sw"},"Swedish":{"deepL":"SV","google":"sv"},"Tagalog (Filipino)":{"google":"tl"},"Tajik":{"google":"tg"},"Tamil":{"google":"ta"},"Tatar":{"google":"tt"},"Telugu":{"google":"te"},"Thai":{"google":"th"},"Tigrinya":{"google":"ti"},"Tsonga":{"google":"ts"},"Turkish":{"deepL":"TR","google":"tr"},"Turkmen":{"google":"tk"},"Twi (Akan)":{"google":"ak"},"Ukrainian":{"deepL":"UK","google":"uk"},"Urdu":{"google":"ur"},"Uyghur":{"google":"ug"},"Uzbek":{"google":"uz"},"Vietnamese":{"google":"vi"},"Welsh":{"google":"cy"},"Xhosa":{"google":"xh"},"Yiddish":{"google":"yi"},"Yoruba":{"google":"yo"},"Zulu":{"google":"zu"}};
-
-function createSourceList() {
-  createRadioList(SOURCES);
-}
-
-function clearFormGroup() {
-  const sourceList = document.getElementById("form-group")
-  while (sourceList.firstChild) {
-    sourceList.firstChild.remove();
-  }
-}
-
-function createTargetList(selectedSource) {
-  //console.log('selectedSource %s', selectedSource);
-  clearFormGroup();
-  delete TARGETS[selectedSource];
-  createRadioList(TARGETS);
-}
-
-
-function translatorsList(allTranslators, targetObj, target, sourceObj, lang) {
-  if (sourceObj.deepL != null && targetObj.deepL != null) {
-    if (targetObj.dlFormality === true) {
-      allTranslators.push({ label: 'DeepL formal ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"more"}` });
-      allTranslators.push({ label: 'DeepL informal ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"less"}` });
+      //enableForm();
     } else {
-      allTranslators.push({ label: 'DeepL ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"default"}` });
+      closeIt();
+    }
+
+  }
+
+  function preventFormSubmit() { // Prevents redirct of form; see --> https://developers.google.com/apps-script/guides/html/communication#forms
+    var forms = document.querySelectorAll('form');
+    for (var i = 0; i < forms.length; i++) {
+      forms[i].addEventListener('submit', function (event) {
+        event.preventDefault();
+      });
     }
   }
-  if (targetObj.google != null) {
-    allTranslators.push({ label: 'Google ' + lang, value: `{"name":"${lang}", "google":"${targetObj.google}"}` });
+
+  window.addEventListener('load', preventFormSubmit);
+
+  function loading() {
+    document.getElementById('submitButton').value = "Loading...";
+    disableElements('input');
+    disableElements('textarea');
   }
-}
 
-function createCheckboxList(allTranslators, source, target) {
-  // const sourceObj = SOURCES[source];
-  // const targetObj = TARGETS[target];
-
-  // let allLanguages;
-  // const allTranslators = [];
-  // if (targetObj.deepL == null) {
-  //     allLanguages = Object.keys(targetObj);
-  //     for (let i in allLanguages) {
-  //         translatorsList(allTranslators, targetObj[allLanguages[i]], target, sourceObj, allLanguages[i]);
-  //     }
-  // } else {
-  //     translatorsList(allTranslators, targetObj, target, sourceObj, target);
-  // }
-
-
-  // let allLanguages = Object.keys(sourceTargetObj);
-  //document.getElementById('output').innerHTML(allLanguages);
-  var parent = document.getElementById('form-group');
-
-  for (let i = 0; i < allTranslators.length; i++) {
-    var stDiv = document.createElement('div');
-    //stDiv.appendChild(document.createTextNode('TTTEEESSSTT'));
-    var checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.name = 'allTranslators';
-    checkbox.value = allTranslators[i].value;
-    checkbox.id = 'checkbox' + i;
-    checkbox.onclick = function() {disableEnableButton()};
-    //checkbox.addEventListener("click", 'disableEnableButton')
-    stDiv.appendChild(checkbox);
-    var label = document.createElement('label');
-    //label.for='id777';
-    label.setAttribute("for", 'checkbox' + i);
-    label.appendChild(document.createTextNode(allTranslators[i].label));
-    stDiv.appendChild(label);
-    parent.appendChild(stDiv);
+  function disableElements(tagname) {
+    var inputs = document.getElementsByTagName(tagname);
+    for (i = 0; i < inputs.length; i++) {
+      inputs[i].disabled = true;
+    }
   }
-}
 
-function createRadioList(sourceTargetObj) {
-  let allLanguages = Object.keys(sourceTargetObj);
-  //document.getElementById('output').innerHTML(allLanguages);
-  var parent = document.getElementById('form-group');
-
-  for (let i in allLanguages) {
-    var stDiv = document.createElement("div");
-    //stDiv.appendChild(document.createTextNode('TTTEEESSSTT'));
-    var checkbox = document.createElement('input');
-    checkbox.type = "radio";
-    checkbox.name = "source";
-    checkbox.value = allLanguages[i];
-    checkbox.id = allLanguages[i];
-    stDiv.appendChild(checkbox);
-    var label = document.createElement('label');
-    //label.for='id777';
-    label.setAttribute("for", allLanguages[i]);
-    label.appendChild(document.createTextNode(allLanguages[i]));
-    stDiv.appendChild(label);
-    parent.appendChild(stDiv);
+  function enableForm() {
+    document.getElementById('submitButton').value = "Submit";
+    enableElements('input');
+    //enableElements('textarea');
   }
-}
 
-function disableEnableButton(){
+  function enableElements(tagname) {
+    var inputs = document.getElementsByTagName(tagname);
+    for (i = 0; i < inputs.length; i++) {
+      inputs[i].disabled = false;
+    }
+  }
+
+  const SOURCES = { "Afrikaans": { "google": "af" }, "Albanian": { "google": "sq" }, "Amharic": { "google": "am" }, "Arabic": { "google": "ar" }, "Armenian": { "google": "hy" }, "Assamese": { "google": "as" }, "Aymara": { "google": "ay" }, "Azerbaijani": { "google": "az" }, "Bambara": { "google": "bm" }, "Basque": { "google": "eu" }, "Belarusian": { "google": "be" }, "Bengali": { "google": "bn" }, "Bhojpuri": { "google": "bho" }, "Bosnian": { "google": "bs" }, "Bulgarian": { "deepL": "BG", "google": "bg" }, "Catalan": { "google": "ca" }, "Cebuano": { "google": "ceb" }, "Chinese": { "deepL": "ZH", "google": "zh" }, "Chinese (Simplified)": { "google": "zh-CN" }, "Chinese (Traditional)": { "google": "zh-TW" }, "Corsican": { "google": "co" }, "Croatian": { "google": "hr" }, "Czech": { "deepL": "CS", "google": "cs" }, "Danish": { "deepL": "DA", "google": "da" }, "Dhivehi": { "google": "dv" }, "Dogri": { "google": "doi" }, "Dutch": { "deepL": "NL", "google": "nl" }, "English": { "deepL": "EN", "google": "en" }, "Esperanto": { "google": "eo" }, "Estonian": { "deepL": "ET", "google": "et" }, "Ewe": { "google": "ee" }, "Finnish": { "deepL": "FI", "google": "fi" }, "French": { "deepL": "FR", "google": "fr" }, "Frisian": { "google": "fy" }, "Galician": { "google": "gl" }, "Georgian": { "google": "ka" }, "German": { "deepL": "DE", "google": "de" }, "Greek": { "deepL": "EL", "google": "el" }, "Guarani": { "google": "gn" }, "Gujarati": { "google": "gu" }, "Haitian Creole": { "google": "ht" }, "Hausa": { "google": "ha" }, "Hawaiian": { "google": "haw" }, "Hebrew": { "google": "he" }, "Hindi": { "google": "hi" }, "Hmong": { "google": "hmn" }, "Hungarian": { "deepL": "HU", "google": "hu" }, "Icelandic": { "google": "is" }, "Igbo": { "google": "ig" }, "Ilocano": { "google": "ilo" }, "Indonesian": { "deepL": "ID", "google": "id" }, "Irish": { "google": "ga" }, "Italian": { "deepL": "IT", "google": "it" }, "Japanese": { "deepL": "JA", "google": "ja" }, "Javanese": { "google": "jv" }, "Kannada": { "google": "kn" }, "Kazakh": { "google": "kk" }, "Khmer": { "google": "km" }, "Kinyarwanda": { "google": "rw" }, "Konkani": { "google": "gom" }, "Korean": { "google": "ko" }, "Krio": { "google": "kri" }, "Kurdish": { "google": "ku" }, "Kurdish (Sorani)": { "google": "ckb" }, "Kyrgyz": { "google": "ky" }, "Lao": { "google": "lo" }, "Latin": { "google": "la" }, "Latvian": { "deepL": "LV", "google": "lv" }, "Lingala": { "google": "ln" }, "Lithuanian": { "deepL": "LT", "google": "lt" }, "Luganda": { "google": "lg" }, "Luxembourgish": { "google": "lb" }, "Macedonian": { "google": "mk" }, "Maithili": { "google": "mai" }, "Malagasy": { "google": "mg" }, "Malay": { "google": "ms" }, "Malayalam": { "google": "ml" }, "Maltese": { "google": "mt" }, "Maori": { "google": "mi" }, "Marathi": { "google": "mr" }, "Meiteilon (Manipuri)": { "google": "mni-Mtei" }, "Mizo": { "google": "lus" }, "Mongolian": { "google": "mn" }, "Myanmar (Burmese)": { "google": "my" }, "Nepali": { "google": "ne" }, "Norwegian": { "google": "no" }, "Nyanja (Chichewa)": { "google": "ny" }, "Odia (Oriya)": { "google": "or" }, "Oromo": { "google": "om" }, "Pashto": { "google": "ps" }, "Persian": { "google": "fa" }, "Polish": { "deepL": "PL", "google": "pl" }, "Portuguese": { "deepL": "PT" }, "Portuguese (Portugal, Brazil)": { "google": "pt" }, "Punjabi": { "google": "pa" }, "Quechua": { "google": "qu" }, "Romanian": { "deepL": "RO", "google": "ro" }, "Russian": { "deepL": "RU", "google": "ru" }, "Samoan": { "google": "sm" }, "Sanskrit": { "google": "sa" }, "Scots Gaelic": { "google": "gd" }, "Sepedi": { "google": "nso" }, "Serbian": { "google": "sr" }, "Sesotho": { "google": "st" }, "Shona": { "google": "sn" }, "Sindhi": { "google": "sd" }, "Sinhala (Sinhalese)": { "google": "si" }, "Slovak": { "deepL": "SK", "google": "sk" }, "Slovenian": { "deepL": "SL", "google": "sl" }, "Somali": { "google": "so" }, "Spanish": { "deepL": "ES", "google": "es" }, "Sundanese": { "google": "su" }, "Swahili": { "google": "sw" }, "Swedish": { "deepL": "SV", "google": "sv" }, "Tagalog (Filipino)": { "google": "tl" }, "Tajik": { "google": "tg" }, "Tamil": { "google": "ta" }, "Tatar": { "google": "tt" }, "Telugu": { "google": "te" }, "Thai": { "google": "th" }, "Tigrinya": { "google": "ti" }, "Tsonga": { "google": "ts" }, "Turkish": { "deepL": "TR", "google": "tr" }, "Turkmen": { "google": "tk" }, "Twi (Akan)": { "google": "ak" }, "Ukrainian": { "deepL": "UK", "google": "uk" }, "Urdu": { "google": "ur" }, "Uyghur": { "google": "ug" }, "Uzbek": { "google": "uz" }, "Vietnamese": { "google": "vi" }, "Welsh": { "google": "cy" }, "Xhosa": { "google": "xh" }, "Yiddish": { "google": "yi" }, "Yoruba": { "google": "yo" }, "Zulu": { "google": "zu" } };
+
+  const TARGETS = { "Afrikaans": { "google": "af" }, "Albanian": { "google": "sq" }, "Amharic": { "google": "am" }, "Arabic": { "google": "ar" }, "Armenian": { "google": "hy" }, "Assamese": { "google": "as" }, "Aymara": { "google": "ay" }, "Azerbaijani": { "google": "az" }, "Bambara": { "google": "bm" }, "Basque": { "google": "eu" }, "Belarusian": { "google": "be" }, "Bengali": { "google": "bn" }, "Bhojpuri": { "google": "bho" }, "Bosnian": { "google": "bs" }, "Bulgarian": { "deepL": "BG", "google": "bg" }, "Catalan": { "google": "ca" }, "Cebuano": { "google": "ceb" }, "Chinese": { "Chinese (simplified)": { "deepL": "ZH", "google": "zh-CN" }, "Chinese (traditional)": { "google": "zh-TW" } }, "Corsican": { "google": "co" }, "Croatian": { "google": "hr" }, "Czech": { "deepL": "CS", "google": "cs" }, "Danish": { "deepL": "DA", "google": "da" }, "Dhivehi": { "google": "dv" }, "Dogri": { "google": "doi" }, "Dutch": { "deepL": "NL", "dlFormality": true, "google": "nl" }, "English": { "English (American)": { "deepL": "EN-US" }, "English (British)": { "deepL": "EN-GB" }, "English": { "google": "en" } }, "Esperanto": { "google": "eo" }, "Estonian": { "deepL": "ET", "google": "et" }, "Ewe": { "google": "ee" }, "Finnish": { "deepL": "FI", "google": "fi" }, "French": { "deepL": "FR", "dlFormality": true, "google": "fr" }, "Frisian": { "google": "fy" }, "Galician": { "google": "gl" }, "Georgian": { "google": "ka" }, "German": { "deepL": "DE", "dlFormality": true, "google": "de" }, "Greek": { "deepL": "EL", "google": "el" }, "Guarani": { "google": "gn" }, "Gujarati": { "google": "gu" }, "Haitian Creole": { "google": "ht" }, "Hausa": { "google": "ha" }, "Hawaiian": { "google": "haw" }, "Hebrew": { "google": "he" }, "Hindi": { "google": "hi" }, "Hmong": { "google": "hmn" }, "Hungarian": { "deepL": "HU", "google": "hu" }, "Icelandic": { "google": "is" }, "Igbo": { "google": "ig" }, "Ilocano": { "google": "ilo" }, "Indonesian": { "deepL": "ID", "google": "id" }, "Irish": { "google": "ga" }, "Italian": { "deepL": "IT", "dlFormality": true, "google": "it" }, "Japanese": { "deepL": "JA", "google": "ja" }, "Javanese": { "google": "jv" }, "Kannada": { "google": "kn" }, "Kazakh": { "google": "kk" }, "Khmer": { "google": "km" }, "Kinyarwanda": { "google": "rw" }, "Konkani": { "google": "gom" }, "Korean": { "google": "ko" }, "Krio": { "google": "kri" }, "Kurdish": { "google": "ku" }, "Kurdish (Sorani)": { "google": "ckb" }, "Kyrgyz": { "google": "ky" }, "Lao": { "google": "lo" }, "Latin": { "google": "la" }, "Latvian": { "deepL": "LV", "google": "lv" }, "Lingala": { "google": "ln" }, "Lithuanian": { "deepL": "LT", "google": "lt" }, "Luganda": { "google": "lg" }, "Luxembourgish": { "google": "lb" }, "Macedonian": { "google": "mk" }, "Maithili": { "google": "mai" }, "Malagasy": { "google": "mg" }, "Malay": { "google": "ms" }, "Malayalam": { "google": "ml" }, "Maltese": { "google": "mt" }, "Maori": { "google": "mi" }, "Marathi": { "google": "mr" }, "Meiteilon (Manipuri)": { "google": "mni-Mtei" }, "Mizo": { "google": "lus" }, "Mongolian": { "google": "mn" }, "Myanmar (Burmese)": { "google": "my" }, "Nepali": { "google": "ne" }, "Norwegian": { "google": "no" }, "Nyanja (Chichewa)": { "google": "ny" }, "Odia (Oriya)": { "google": "or" }, "Oromo": { "google": "om" }, "Pashto": { "google": "ps" }, "Persian": { "google": "fa" }, "Polish": { "deepL": "PL", "dlFormality": true, "google": "pl" }, "Portuguese": { "Portuguese (Brazilian)": { "deepL": "PT-BR", "dlFormality": true }, "Portuguese (European)": { "deepL": "PT-PT", "dlFormality": true }, "Portuguese (Portugal, Brazil)": { "google": "pt" } }, "Punjabi": { "google": "pa" }, "Quechua": { "google": "qu" }, "Romanian": { "deepL": "RO", "google": "ro" }, "Russian": { "deepL": "RU", "dlFormality": true, "google": "ru" }, "Samoan": { "google": "sm" }, "Sanskrit": { "google": "sa" }, "Scots Gaelic": { "google": "gd" }, "Sepedi": { "google": "nso" }, "Serbian": { "google": "sr" }, "Sesotho": { "google": "st" }, "Shona": { "google": "sn" }, "Sindhi": { "google": "sd" }, "Sinhala (Sinhalese)": { "google": "si" }, "Slovak": { "deepL": "SK", "google": "sk" }, "Slovenian": { "deepL": "SL", "google": "sl" }, "Somali": { "google": "so" }, "Spanish": { "deepL": "ES", "dlFormality": true, "google": "es" }, "Sundanese": { "google": "su" }, "Swahili": { "google": "sw" }, "Swedish": { "deepL": "SV", "google": "sv" }, "Tagalog (Filipino)": { "google": "tl" }, "Tajik": { "google": "tg" }, "Tamil": { "google": "ta" }, "Tatar": { "google": "tt" }, "Telugu": { "google": "te" }, "Thai": { "google": "th" }, "Tigrinya": { "google": "ti" }, "Tsonga": { "google": "ts" }, "Turkish": { "deepL": "TR", "google": "tr" }, "Turkmen": { "google": "tk" }, "Twi (Akan)": { "google": "ak" }, "Ukrainian": { "deepL": "UK", "google": "uk" }, "Urdu": { "google": "ur" }, "Uyghur": { "google": "ug" }, "Uzbek": { "google": "uz" }, "Vietnamese": { "google": "vi" }, "Welsh": { "google": "cy" }, "Xhosa": { "google": "xh" }, "Yiddish": { "google": "yi" }, "Yoruba": { "google": "yo" }, "Zulu": { "google": "zu" } };
+
+  function createSourceList() {
+    createRadioList(SOURCES);
+  }
+
+  function clearFormGroup() {
+    const sourceList = document.getElementById("form-group")
+    while (sourceList.firstChild) {
+      sourceList.firstChild.remove();
+    }
+  }
+
+  function createTargetList(selectedSource) {
+    //console.log('selectedSource %s', selectedSource);
+    clearFormGroup();
+    delete TARGETS[selectedSource];
+    createRadioList(TARGETS);
+  }
+
+
+  function translatorsList(allTranslators, targetObj, target, sourceObj, lang) {
+    if (sourceObj.deepL != null && targetObj.deepL != null) {
+      if (targetObj.dlFormality === true) {
+        allTranslators.push({ label: 'DeepL formal ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"more"}` });
+        allTranslators.push({ label: 'DeepL informal ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"less"}` });
+      } else {
+        allTranslators.push({ label: 'DeepL ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"default"}` });
+      }
+    }
+    if (targetObj.google != null) {
+      allTranslators.push({ label: 'Google ' + lang, value: `{"name":"${lang}", "google":"${targetObj.google}"}` });
+    }
+    if (sourceObj.openAI != null && targetObj.openAI != null) {
+      allTranslators.push({ label: 'ChatGPT ' + lang, value: `{"name":"${lang}", "openAI":"${targetObj.openAI}"}` });
+    }
+  }
+
+  function createCheckboxList(allTranslators, source, target) {
+    var parent = document.getElementById('form-group');
+
+    for (let i = 0; i < allTranslators.length; i++) {
+      var stDiv = document.createElement('div');
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'allTranslators';
+      checkbox.value = allTranslators[i].value;
+      checkbox.id = 'checkbox' + i;
+      checkbox.onclick = function () { disableEnableButton() };
+      stDiv.appendChild(checkbox);
+      var label = document.createElement('label');
+      label.setAttribute("for", 'checkbox' + i);
+      label.appendChild(document.createTextNode(allTranslators[i].label));
+      stDiv.appendChild(label);
+      parent.appendChild(stDiv);
+    }
+  }
+
+  function createRadioList(sourceTargetObj) {
+    let allLanguages = Object.keys(sourceTargetObj);
+    var parent = document.getElementById('form-group');
+
+    for (let i in allLanguages) {
+      var stDiv = document.createElement("div");
+      var checkbox = document.createElement('input');
+      checkbox.type = "radio";
+      checkbox.name = "source";
+      checkbox.value = allLanguages[i];
+      checkbox.id = allLanguages[i];
+      stDiv.appendChild(checkbox);
+      var label = document.createElement('label');
+      label.setAttribute("for", allLanguages[i]);
+      label.appendChild(document.createTextNode(allLanguages[i]));
+      stDiv.appendChild(label);
+      parent.appendChild(stDiv);
+    }
+  }
+
+  function disableEnableButton() {
     const submitButton = document.getElementById('submitButton');
     const allChecked = document.querySelectorAll('input[name=allTranslators]:checked');
-    if (allChecked.length == 0){
-        submitButton.disabled = true;
-    }else{
-        submitButton.disabled = false;
-    }
-}
-
-function createConfirmationList(source, target, targetsArray) {
-  let targetObj, text;
-  var parent = document.getElementById('form-group');
-
-  var stDiv = document.createElement("div");
-  stDiv.appendChild(document.createTextNode(source + ' -> ' + target));
-  parent.appendChild(stDiv);
-
-  var stDiv = document.createElement("div");
-  stDiv.appendChild(document.createTextNode('Translation targets:'));
-  parent.appendChild(stDiv);
-
-  //`{name:${lang}, deepL:${targetObj.deepL}, form:true}`
-  for (let i in targetsArray) {
-    var stDiv = document.createElement("div");
-    targetObj = JSON.parse(targetsArray[i]);
-    if (targetObj.deepL != null) {
-      text = 'DeepL ';
-      if (targetObj.form != null) {
-        if (targetObj.form == "more") {
-          text += 'formal ';
-        } else if (targetObj.form == "less") {
-          text += 'informal ';
-        }
-      }
+    if (allChecked.length == 0) {
+      submitButton.disabled = true;
     } else {
-      text = 'Google ';
+      submitButton.disabled = false;
     }
-    text += targetObj.name;
-    stDiv.appendChild(document.createTextNode(text));
-    parent.appendChild(stDiv);
   }
-}
+
+  function createConfirmationList(source, target, targetsArray) {
+    // console.log(targetsArray)
+    let targetObj, text;
+    var parent = document.getElementById('form-group');
+
+    var stDiv = document.createElement("div");
+    stDiv.appendChild(document.createTextNode(source + ' -> ' + target));
+    parent.appendChild(stDiv);
+
+    var stDiv = document.createElement("div");
+    stDiv.appendChild(document.createTextNode('Translation targets:'));
+    parent.appendChild(stDiv);
+
+    //`{name:${lang}, deepL:${targetObj.deepL}, form:true}`
+    for (let i in targetsArray) {
+      var stDiv = document.createElement("div");
+      targetObj = JSON.parse(targetsArray[i]);
+      if (targetObj.deepL != null) {
+        text = 'DeepL ';
+        if (targetObj.form != null) {
+          if (targetObj.form == "more") {
+            text += 'formal ';
+          } else if (targetObj.form == "less") {
+            text += 'informal ';
+          }
+        }
+      } else if (targetObj.openAI != null) {
+        text = 'ChatGPT ';
+      } else {
+        text = 'Google ';
+      }
+      text += targetObj.name;
+      stDiv.appendChild(document.createTextNode(text));
+      parent.appendChild(stDiv);
+    }
+  }
 </script>

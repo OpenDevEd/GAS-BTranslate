@@ -1,8 +1,8 @@
-var apiKey = '';
+//var apiKey = '';
 
 //might consider using post? https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app#fetch(String)
 // translateSelectionAndAppendL uses the function
-function translateTextDeepL(txt, from, to, formality) {
+function translateTextDeepL(txt, from, to, formality, apiKey) {
   var url = "https://api.deepl.com/v2/translate?auth_key=" + apiKey +
     "&source_lang=" + from.toUpperCase() + "&target_lang=" + to.toUpperCase() + "&formality=" + formality + "&text=" + encodeURIComponent(txt);
   var response = UrlFetchApp.fetch(url);
@@ -22,7 +22,7 @@ function getDeepLURL(txt, from, to) {
 
 // Menu item 'gdlu get DeepL usage and costs'
 function getDeepLUsage() {
-  const apikey = getDeepLAPIkey('user');
+  const apikey = getDeepLAPIkey('user', 'DeepLAPIkey');
   if (apikey == null) {
     alert('Add DeepL API key for user / all documents.');
     return 0;

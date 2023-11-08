@@ -1,13 +1,91 @@
+
+function getApiKey(translator) {
+  const translatorName = PROPERTY_NAMES[translator]['textName'];
+  const propertyApiKeyName = PROPERTY_NAMES[translator]['propertyApiKeyName'];
+
+  const activeDeeplApiKeySettings = getDeeplApiKeySettings(true, translator).settings;
+  // Logger.log(activeDeeplApiKeySettings);
+
+  let deeplApiKeyUser = getDeepLAPIkey('user', propertyApiKeyName);
+  let deeplApiKeyDoc = getDeepLAPIkey('doc', propertyApiKeyName);
+
+  let useDeeplApiKeyUser, useDeeplApiKeyDoc, confirmationResult, selectedStorage, keyResult;
+  // Always ask
+  if (activeDeeplApiKeySettings == 'ask') {
+    if (deeplApiKeyUser != null && deeplApiKeyDoc != null) {
+      confirmationResult = getConfirmationFromUser(`If you want to use ${translatorName} API key stored in user properties, click OK.\nIf you want to use ${translatorName} API key stored in document properties, click CANCEL`);
+      if (confirmationResult === true) {
+        selectedStorage = 'user';
+      } else {
+        selectedStorage = 'doc';
+      }
+    } else if (deeplApiKeyUser == null && deeplApiKeyDoc == null) {
+      alert(`Please enable ${translatorName} by entering API key.`);
+      return { status: 'error' };
+    } else if (deeplApiKeyUser != null && deeplApiKeyDoc == null) {
+      confirmationResult = getConfirmationFromUser(`If you want to use ${translatorName} API key stored in user properties, click OK.\nIf you want to add ${translatorName} API key for document, click CANCEL`);
+      if (confirmationResult === true) {
+        selectedStorage = 'user';
+      } else {
+        selectedStorage = 'doc';
+        keyResult = enterDeepLAPIkey('doc', translator);
+        if (keyResult.status == 'ok') {
+          deeplApiKeyDoc = keyResult.apiKey;
+        } else if (keyResult.status == 'error') {
+          return { status: 'error' };
+        }
+      }
+    } else if (deeplApiKeyUser == null && deeplApiKeyDoc != null) {
+      confirmationResult = getConfirmationFromUser(`If you want to use ${translatorName} API key stored in doc properties, click OK.\nIf you want to add ${translatorName} API key for user/all documents, click CANCEL`);
+      if (confirmationResult === true) {
+        selectedStorage = 'doc';
+      } else {
+        selectedStorage = 'user';
+        keyResult = enterDeepLAPIkey('user', translator);
+        if (keyResult.status == 'ok') {
+          deeplApiKeyUser = keyResult.apiKey;
+        } else if (keyResult.status == 'error') {
+          return { status: 'error' };
+        }
+      }
+    }
+    apiKey = selectedStorage === 'user' ? deeplApiKeyUser : deeplApiKeyDoc;
+  }
+  // End. Always ask
+
+  // Default to document API key / Default to user API key
+  else if (activeDeeplApiKeySettings == 'doc' || activeDeeplApiKeySettings == 'user') {
+    if ((activeDeeplApiKeySettings == 'doc' && deeplApiKeyDoc == null) || (activeDeeplApiKeySettings == 'user' && deeplApiKeyUser == null)) {
+      keyResult = enterDeepLAPIkey(activeDeeplApiKeySettings, translator);
+      if (keyResult.status == 'ok') {
+        apiKey = keyResult.apiKey;
+      } else if (keyResult.status == 'error') {
+        return { status: 'error' };
+      }
+    } else if ((activeDeeplApiKeySettings == 'doc' && deeplApiKeyDoc != null) || (activeDeeplApiKeySettings == 'user' && deeplApiKeyUser != null)) {
+      apiKey = activeDeeplApiKeySettings == 'user' ? deeplApiKeyUser : deeplApiKeyDoc;
+    }
+  }
+  // End. Default to document API key / Default to user API key
+  return { apiKey: apiKey, status: 'ok' };
+}
+
+
+
 // retrieveSlot uses the function
 function translateSelectionAndAppendL(settings) {
-  //Logger.log(settings);
+  try {
+  // Logger.log(settings);
   const deepLArray = [];
   const googleArray = [];
+  const openAIArray = [];
   let translationsArray = [];
   let translationsToInsert = [];
   for (let i in settings.targets) {
     if (settings.targets[i].deepL) {
       deepLArray.push({ origin: settings.source.deepL, dest: settings.targets[i].deepL, formality: settings.targets[i].form });
+    } else if (settings.targets[i].openAI) {
+      openAIArray.push({ origin: settings.source.openAI, dest: settings.targets[i].name });
     } else {
       googleArray.push({ origin: settings.source.google, dest: settings.targets[i].google });
     }
@@ -15,82 +93,31 @@ function translateSelectionAndAppendL(settings) {
 
   // Logger.log(deepLArray);
   // Logger.log(googleArray);
+  // Logger.log(openAIArray);
 
   // Translation settings contain DeepL
+  let deepLApiKey;
   if (deepLArray.length > 0) {
-    // DeepL API key
-    const activeDeeplApiKeySettings = getDeeplApiKeySettings(true).settings;
-    let deeplApiKeyUser = getDeepLAPIkey('user');
-    let deeplApiKeyDoc = getDeepLAPIkey('doc');
-
-    let useDeeplApiKeyUser, useDeeplApiKeyDoc, confirmationResult, selectedStorage, keyResult;
-    // Always ask
-    if (activeDeeplApiKeySettings == 'ask') {
-      if (deeplApiKeyUser != null && deeplApiKeyDoc != null) {
-        confirmationResult = getConfirmationFromUser('If you want to use DeepL API key stored in user properties, click OK.\nIf you want to use DeepL API key stored in document properties, click CANCEL');
-        if (confirmationResult === true) {
-          selectedStorage = 'user';
-        } else {
-          selectedStorage = 'doc';
-        }
-      } else if (deeplApiKeyUser == null && deeplApiKeyDoc == null) {
-        alert('Please enable DeepL by entering API key.');
-        return 0;
-      } else if (deeplApiKeyUser != null && deeplApiKeyDoc == null) {
-        confirmationResult = getConfirmationFromUser('If you want to use DeepL API key stored in user properties, click OK.\nIf you want to add DeepL API key for document, click CANCEL');
-        if (confirmationResult === true) {
-          selectedStorage = 'user';
-        } else {
-          selectedStorage = 'doc';
-          keyResult = enterDeepLAPIkey('doc');
-          if (keyResult.status == 'ok') {
-            deeplApiKeyDoc = keyResult.apiKey;
-          } else if (keyResult.status == 'error') {
-            return 0;
-          }
-        }
-      } else if (deeplApiKeyUser == null && deeplApiKeyDoc != null) {
-        confirmationResult = getConfirmationFromUser('If you want to use DeepL API key stored in doc properties, click OK.\nIf you want to add DeepL API key for user/all documents, click CANCEL');
-        if (confirmationResult === true) {
-          selectedStorage = 'doc';
-        } else {
-          selectedStorage = 'user';
-          keyResult = enterDeepLAPIkey('user');
-          if (keyResult.status == 'ok') {
-            deeplApiKeyUser = keyResult.apiKey;
-          } else if (keyResult.status == 'error') {
-            return 0;
-          }
-        }
-      }
-      apiKey = selectedStorage == 'user' ? deeplApiKeyUser : deeplApiKeyDoc;
-    }
-    // End. Always ask
-
-    // Default to document API key / Default to user API key
-    if (activeDeeplApiKeySettings == 'doc' || activeDeeplApiKeySettings == 'user') {
-      if ((activeDeeplApiKeySettings == 'doc' && deeplApiKeyDoc == null) || (activeDeeplApiKeySettings == 'user' && deeplApiKeyUser == null)) {
-        keyResult = enterDeepLAPIkey(activeDeeplApiKeySettings);
-        if (keyResult.status == 'ok') {
-          //deeplApiKeyDoc = keyResult.apiKey;
-          apiKey = keyResult.apiKey;
-        } else if (keyResult.status == 'error') {
-          return 0;
-        }
-      } else if ((activeDeeplApiKeySettings == 'doc' && deeplApiKeyDoc != null) || (activeDeeplApiKeySettings == 'user' && deeplApiKeyUser != null)) {
-        apiKey = activeDeeplApiKeySettings == 'user' ? deeplApiKeyUser : deeplApiKeyDoc;
-      }
-    }
-    // End. Default to document API key / Default to user API key
-    // End. DeepL API key
+    const deepLKeyResult = getApiKey('DEEPL');
+    if (deepLKeyResult.status !== 'ok') return 0;
+    deepLApiKey = deepLKeyResult.apiKey;
   }
   // End. Translation settings contain DeepL
 
-  let translationLinkText, linkStart, linkEnd, dLlinkText;
+  // Translation settings contain ChatGPT
+  let chatGPTApiKey;
+  if (openAIArray.length > 0) {
+    const chatGPTKeyResult = getApiKey('CHATGPT');
+    if (chatGPTKeyResult.status !== 'ok') return 0;
+    chatGPTApiKey = chatGPTKeyResult.apiKey;
+  }
+  // End. Translation settings contain ChatGPT
+
+  let dLlinkText;
 
   const format = getFormatSettings(true);
   if (format.style == 'footnotes') {
-    appendFootnotes(deepLArray, googleArray);
+    appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chatGPTApiKey);
   } else if (format.style == 'txt') {
 
     // This will use the selection or the paragraph.
@@ -121,9 +148,17 @@ function translateSelectionAndAppendL(settings) {
             // Logger.log(deepLArray);
             // Logger.log(googleArray);
 
+            // translate using OpenAI API and insert
+            for (let j in openAIArray) {
+              var out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
+              var openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
+              var openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
+              collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
+            }
+
             // translate using Google Translate and insert
             for (let j in googleArray) {
-              var out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
+              out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
               var glinkText = "《G:" + googleArray[j].dest + "》";
               var gtrURL = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
               collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL);
@@ -131,7 +166,7 @@ function translateSelectionAndAppendL(settings) {
 
             // translate using DeepL and insert    
             for (let j = 0; j < deepLArray.length; j++) {
-              out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality);
+              out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, deepLApiKey);
               if (deepLArray[j].formality == 'default') {
                 formality = '';
               } else {
@@ -173,9 +208,13 @@ function translateSelectionAndAppendL(settings) {
   } else {
     alert('Error. Unexpected format style.');
   }
+  }
+  catch (error) {
+    alert(error);
+  }
 }
 
-function appendFootnotes(deepLArray, googleArray) {
+function appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chatGPTApiKey) {
   const doc = DocumentApp.getActiveDocument();
   const documentId = doc.getId();
 
@@ -204,7 +243,7 @@ function appendFootnotes(deepLArray, googleArray) {
 
           // Translates using DeepL
           for (let j = 0; j < deepLArray.length; j++) {
-            out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality);
+            out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, deepLApiKey);
             if (deepLArray[j].formality == 'default') {
               formality = '';
             } else {
@@ -225,6 +264,15 @@ function appendFootnotes(deepLArray, googleArray) {
             collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl);
           }
           // End. Translates using Google Translate
+
+          // Translate using OpenAI API
+          for (let j in openAIArray) {
+            out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
+            var openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
+            var openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
+            collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
+          }
+          // End. Translate using OpenAI API
 
           // rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, translationsToInsert[0], namedRanges, footnotesInfo);
 

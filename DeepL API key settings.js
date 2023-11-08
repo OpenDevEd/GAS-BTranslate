@@ -1,5 +1,18 @@
+const PROPERTY_NAMES = {
+  DEEPL: {
+    propertyApiKeySettingsName: 'DEEPL_API_KEY_SETTINGS',
+    propertyApiKeyName: 'DeepLAPIkey',
+    textName: 'DeepL'
+  },
+  CHATGPT: {
+    propertyApiKeySettingsName: 'CHATGPT_API_KEY_SETTINGS',
+    propertyApiKeyName: 'ChatGPTAPIkey',
+    textName: 'ChatGPT'
+  }
+};
+
 // submenu_09_translate_basic, translateSelectionAndAppendL use the function
-function getDeeplApiKeySettings(tryToRetrieveProperties) {
+function getDeeplApiKeySettings(tryToRetrieveProperties, translator) {
   const DEFAULT_SETTINGS = 'user';
   const resultObj = {
     marker: '',
@@ -9,13 +22,13 @@ function getDeeplApiKeySettings(tryToRetrieveProperties) {
   if (tryToRetrieveProperties === true) {
     try {
       const userProperties = PropertiesService.getUserProperties();
-      const settings = userProperties.getProperty('DEEPL_API_KEY_SETTINGS');
+      const settings = userProperties.getProperty(PROPERTY_NAMES[translator]['propertyApiKeySettingsName']);
       if (settings != null && deeplApiKeySettings.hasOwnProperty(settings)) {
         resultObj['settings'] = settings;
-        resultObj['menuText'] = deeplApiKeySettings[settings]['menuText'];
+        resultObj['menuText'] = translator === 'DEEPL' ? deeplApiKeySettings[settings]['menuText'] : chatGPTApiKeySettings[settings]['menuText'];
         resultObj['marker'] = '✅';
         if (settings == 'doc') {
-          const docKey = getDeepLAPIkey('doc');
+          const docKey = getDeepLAPIkey('doc', PROPERTY_NAMES[translator]['propertyApiKeyName']);
           if (docKey == null) {
             resultObj['marker'] = '❌';
           }
@@ -33,26 +46,43 @@ function getDeeplApiKeySettings(tryToRetrieveProperties) {
 }
 
 
-function activateDeeplApiKeySettings(obj) {
-  // Finds key in deeplApiKeySettings where value equals obj
-  const settings = Object.keys(deeplApiKeySettings).find(key => deeplApiKeySettings[key] === obj);
+function activateDeeplApiKeySettings(obj, translatorName) {
+  const apiKeySettingsObj = translatorName === 'DEEPL' ? deeplApiKeySettings : chatGPTApiKeySettings;
+  // Finds key in apiKeySettingsObj where value equals obj
+  const settings = Object.keys(apiKeySettingsObj).find(key => apiKeySettingsObj[key] === obj);
   const userProperties = PropertiesService.getUserProperties();
-  userProperties.setProperty('DEEPL_API_KEY_SETTINGS', settings);
+  userProperties.setProperty(translatorName + '_API_KEY_SETTINGS', settings);
   onOpen();
 }
 
 // Menu items of DeepL API key settings
 const deeplApiKeySettings = {
   "user": {
-    "menuText": "Default to user API key",
-    "run": function () { activateDeeplApiKeySettings(this); }
+    "menuText": "Default to user DeepL API key",
+    "run": function () { activateDeeplApiKeySettings(this, 'DEEPL'); }
   },
   "doc": {
-    "menuText": "Default to document API key",
-    "run": function () { activateDeeplApiKeySettings(this); }
+    "menuText": "Default to document DeepL API key",
+    "run": function () { activateDeeplApiKeySettings(this, 'DEEPL'); }
   },
   "ask": {
     "menuText": "Always ask",
-    "run": function () { activateDeeplApiKeySettings(this); }
+    "run": function () { activateDeeplApiKeySettings(this, 'DEEPL'); }
+  }
+}
+
+// Menu items of ChatGPT API key settings
+const chatGPTApiKeySettings = {
+  "user": {
+    "menuText": "Default to user ChatGPT API key",
+    "run": function () { activateDeeplApiKeySettings(this, 'CHATGPT'); }
+  },
+  "doc": {
+    "menuText": "Default to document ChatGPT API key",
+    "run": function () { activateDeeplApiKeySettings(this, 'CHATGPT'); }
+  },
+  "ask": {
+    "menuText": "Always ask",
+    "run": function () { activateDeeplApiKeySettings(this, 'CHATGPT'); }
   }
 }

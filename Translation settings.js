@@ -52,6 +52,8 @@ function saveLanguage(finalSettings) {
   for (let i in finalSettings.targets) {
     if (finalSettings.targets[i].google) {
       newKey += finalSettings.targets[i].google;
+    } else if (finalSettings.targets[i].openAI) {
+      newKey += finalSettings.targets[i].openAI + 'AI';
     } else {
       newKey += finalSettings.targets[i].deepL;
     }
