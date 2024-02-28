@@ -75,139 +75,139 @@ function getApiKey(translator) {
 // retrieveSlot uses the function
 function translateSelectionAndAppendL(settings) {
   try {
-  // Logger.log(settings);
-  const deepLArray = [];
-  const googleArray = [];
-  const openAIArray = [];
-  let translationsArray = [];
-  let translationsToInsert = [];
-  for (let i in settings.targets) {
-    if (settings.targets[i].deepL) {
-      deepLArray.push({ origin: settings.source.deepL, dest: settings.targets[i].deepL, formality: settings.targets[i].form });
-    } else if (settings.targets[i].openAI) {
-      openAIArray.push({ origin: settings.source.openAI, dest: settings.targets[i].name });
-    } else {
-      googleArray.push({ origin: settings.source.google, dest: settings.targets[i].google });
+    // Logger.log(settings);
+    const deepLArray = [];
+    const googleArray = [];
+    const openAIArray = [];
+    let translationsArray = [];
+    let translationsToInsert = [];
+    for (let i in settings.targets) {
+      if (settings.targets[i].deepL) {
+        deepLArray.push({ origin: settings.source.deepL, dest: settings.targets[i].deepL, formality: settings.targets[i].form });
+      } else if (settings.targets[i].openAI) {
+        openAIArray.push({ origin: settings.source.openAI, dest: settings.targets[i].name });
+      } else {
+        googleArray.push({ origin: settings.source.google, dest: settings.targets[i].google });
+      }
     }
-  }
 
-  // Logger.log(deepLArray);
-  // Logger.log(googleArray);
-  // Logger.log(openAIArray);
+    // Logger.log(deepLArray);
+    // Logger.log(googleArray);
+    // Logger.log(openAIArray);
 
-  // Translation settings contain DeepL
-  let deepLApiKey;
-  if (deepLArray.length > 0) {
-    const deepLKeyResult = getApiKey('DEEPL');
-    if (deepLKeyResult.status !== 'ok') return 0;
-    deepLApiKey = deepLKeyResult.apiKey;
-  }
-  // End. Translation settings contain DeepL
+    // Translation settings contain DeepL
+    let deepLApiKey;
+    if (deepLArray.length > 0) {
+      const deepLKeyResult = getApiKey('DEEPL');
+      if (deepLKeyResult.status !== 'ok') return 0;
+      deepLApiKey = deepLKeyResult.apiKey;
+    }
+    // End. Translation settings contain DeepL
 
-  // Translation settings contain ChatGPT
-  let chatGPTApiKey;
-  if (openAIArray.length > 0) {
-    const chatGPTKeyResult = getApiKey('CHATGPT');
-    if (chatGPTKeyResult.status !== 'ok') return 0;
-    chatGPTApiKey = chatGPTKeyResult.apiKey;
-  }
-  // End. Translation settings contain ChatGPT
+    // Translation settings contain ChatGPT
+    let chatGPTApiKey;
+    if (openAIArray.length > 0) {
+      const chatGPTKeyResult = getApiKey('CHATGPT');
+      if (chatGPTKeyResult.status !== 'ok') return 0;
+      chatGPTApiKey = chatGPTKeyResult.apiKey;
+    }
+    // End. Translation settings contain ChatGPT
 
-  let dLlinkText;
+    let dLlinkText;
 
-  const format = getFormatSettings(true);
-  if (format.style == 'footnotes') {
-    appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chatGPTApiKey);
-  } else if (format.style == 'txt') {
+    const format = getFormatSettings(true);
+    if (format.style == 'footnotes') {
+      appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chatGPTApiKey);
+    } else if (format.style == 'txt') {
 
-    // This will use the selection or the paragraph.
-    var p = getParagraphs(true);
-    if (p) {
-      for (var i = 0; i < p.length; i++) {
-        translationsArray = [];
-        translationsToInsert = [];
+      // This will use the selection or the paragraph.
+      var p = getParagraphs(true);
+      if (p) {
+        for (var i = 0; i < p.length; i++) {
+          translationsArray = [];
+          translationsToInsert = [];
 
-        var element = p[i];
-        var boundaryStart = "";
-        var boundaryEnd = "";
-        if (i == 0) {
-          boundaryStart = "《translationSTARTS》";
-        };
-        if (i == p.length - 1) {
-          boundaryEnd = "《translationENDS》";
-        };
-        if (element.editAsText) {
-          var elementText = element.asText().getText();
-          // This check is necessary to exclude images, which return a blank text element.
-          if (elementText.length > 0) {
+          var element = p[i];
+          var boundaryStart = "";
+          var boundaryEnd = "";
+          if (i == 0) {
+            boundaryStart = "《translationSTARTS》";
+          };
+          if (i == p.length - 1) {
+            boundaryEnd = "《translationENDS》";
+          };
+          if (element.editAsText) {
+            var elementText = element.asText().getText();
+            // This check is necessary to exclude images, which return a blank text element.
+            if (elementText.length > 0) {
 
-            var parent = element.getParent();
-            var offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
-            var parPosition = parent.getChildIndex(element) + offset;
+              var parent = element.getParent();
+              var offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
+              var parPosition = parent.getChildIndex(element) + offset;
 
-            // Logger.log(deepLArray);
-            // Logger.log(googleArray);
+              // Logger.log(deepLArray);
+              // Logger.log(googleArray);
 
-            // translate using OpenAI API and insert
-            for (let j in openAIArray) {
-              var out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
-              var openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
-              var openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
-              collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
-            }
-
-            // translate using Google Translate and insert
-            for (let j in googleArray) {
-              out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
-              var glinkText = "《G:" + googleArray[j].dest + "》";
-              var gtrURL = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
-              collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL);
-            }
-
-            // translate using DeepL and insert    
-            for (let j = 0; j < deepLArray.length; j++) {
-              out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, deepLApiKey);
-              if (deepLArray[j].formality == 'default') {
-                formality = '';
-              } else {
-                formality = deepLArray[j].formality == 'less' ? ' informal' : ' formal';
+              // translate using OpenAI API and insert
+              for (let j in openAIArray) {
+                var out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
+                var openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
+                var openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
+                collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
               }
-              dLlinkText = "《D:" + deepLArray[j].dest + formality + "》";
-              var DeepLURL = getDeepLURL(elementText, deepLArray[j].origin, deepLArray[j].dest);
-              collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL);
-            }
 
-            //Logger.log(translationsToInsert);
-            var style = element.editAsText().getAttributes();
-            for (let m = 0; m < translationsToInsert.length; m++) {
-              insertTranslations(translationsToInsert[m], parent, style, parPosition);
-            }
+              // translate using Google Translate and insert
+              for (let j in googleArray) {
+                out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
+                var glinkText = "《G:" + googleArray[j].dest + "》";
+                var gtrURL = getgtrURL(elementText, googleArray[j].origin, googleArray[j].dest);
+                collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL);
+              }
 
-            if (i == 0) {
-              newPara = parent.insertParagraph(parPosition, boundaryStart);
-            }
+              // translate using DeepL and insert    
+              for (let j = 0; j < deepLArray.length; j++) {
+                out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, deepLApiKey);
+                if (deepLArray[j].formality == 'default') {
+                  formality = '';
+                } else {
+                  formality = deepLArray[j].formality == 'less' ? ' informal' : ' formal';
+                }
+                dLlinkText = "《D:" + deepLArray[j].dest + formality + "》";
+                var DeepLURL = getDeepLURL(elementText, deepLArray[j].origin, deepLArray[j].dest);
+                collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL);
+              }
 
-            // Give the source paragraph a different colour:
-            style = {};
-            style[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
-            style[DocumentApp.Attribute.FOREGROUND_COLOR] = '#015610'; // null
-            element.editAsText().insertText(0, "《translationOf: ");
-            element.editAsText().insertText(element.editAsText().getText().toString().length, "》" + boundaryEnd);
-            element.editAsText().setAttributes(0, 15, style);
+              //Logger.log(translationsToInsert);
+              var style = element.editAsText().getAttributes();
+              for (let m = 0; m < translationsToInsert.length; m++) {
+                insertTranslations(translationsToInsert[m], parent, style, parPosition);
+              }
+
+              if (i == 0) {
+                newPara = parent.insertParagraph(parPosition, boundaryStart);
+              }
+
+              // Give the source paragraph a different colour:
+              style = {};
+              style[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
+              style[DocumentApp.Attribute.FOREGROUND_COLOR] = '#015610'; // null
+              element.editAsText().insertText(0, "《translationOf: ");
+              element.editAsText().insertText(element.editAsText().getText().toString().length, "》" + boundaryEnd);
+              element.editAsText().setAttributes(0, 15, style);
+            } else {
+              //Logger.log('A blank text element');
+            }
           } else {
-            //Logger.log('A blank text element');
-          }
-        } else {
-          alert('could not edit para');
+            alert('could not edit para');
+          };
         };
+        highlightTranslationStartEnd();
+      } else {
+        alert('could not get para');
       };
-      highlightTranslationStartEnd();
     } else {
-      alert('could not get para');
-    };
-  } else {
-    alert('Error. Unexpected format style.');
-  }
+      alert('Error. Unexpected format style.');
+    }
   }
   catch (error) {
     alert(error);
@@ -397,6 +397,26 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chat
           Logger.log('no footnoteReference');
         }*/
       });
+    }
+
+    if (bodyElements[i].table) {
+      bodyElements[i].table.tableRows.forEach(function (row) {
+        row.tableCells.forEach(function (cell) {
+          cell.content.forEach(function (content) {
+            if (content?.paragraph?.elements) {
+              content.paragraph.elements.forEach(function (item) {
+                if (item.footnoteReference) {
+                  if (footnotesStartIndexes.hasOwnProperty(item.startIndex)) {
+                    footnoteId = item.footnoteReference.footnoteId;
+                    footnotesInfo[footnotesStartIndexes[item.startIndex]].footnoteId = footnoteId;
+                  }
+                }
+              });
+            }
+          });
+        });
+      });
+
     }
   }
   // End. Gets footnotes

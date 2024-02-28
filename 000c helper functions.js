@@ -26,13 +26,45 @@ function getPropertyObj(str) {
 // If no selection is made AND onePara=true, the paragraph in which the cursor is, is returned.
 // If no selection is made AND onePara=false, all paragraphs are returned.
 function getParagraphs(onePara) {
-  return getParagraphsInBodyAndFootnotes(onePara,false);
+  return getParagraphsInBodyAndFootnotes(onePara, false);
 };
 
 // getParagraphs uses the function 
-function getParagraphsInBodyAndFootnotes(onePara,getFootnoteParas) {
-  return getParagraphsInBodyAndFootnotesExtended(onePara,true,getFootnoteParas);
+function getParagraphsInBodyAndFootnotes(onePara, getFootnoteParas) {
+  return getParagraphsInBodyAndFootnotesExtended(onePara, true, getFootnoteParas);
 };
+
+function paragraphsFromTableCell(element) {
+  const paragraphs = [];
+  var cellParagraphs = element.getNumChildren();
+  for (var m = 0; m < cellParagraphs; m++) {
+    var child = element.getChild(m);
+    if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+      paragraphs.push(child);
+    }
+  }
+  return paragraphs;
+}
+
+function paragraphsFromTableRow(element) {
+  const paragraphs = [];
+  var cells = element.getNumCells();
+  for (var k = 0; k < cells; k++) {
+    var cell = element.getCell(k);
+    paragraphs.push(...paragraphsFromTableCell(cell));
+  }
+  return paragraphs;
+}
+
+function paragraphsFromTable(element) {
+  const paragraphs = [];
+  var rows = element.getNumRows();
+  for (var k = 0; k < rows; k++) {
+    var row = element.getRow(k);
+    paragraphs.push(...paragraphsFromTableRow(row));
+  }
+  return paragraphs;
+}
 
 /*
 // Example: 
@@ -42,7 +74,7 @@ getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnoteParas)
 getParagraphsInBodyAndFootnotesExtended(true,true,false);
 */
 // mergeParasInDocumentB, getParagraphsInBodyAndFootnotes use the function
-function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnoteParas) {
+function getParagraphsInBodyAndFootnotesExtended(onePara, getBodyParas, getFootnoteParas) {
   var paraout = [];
   var selection = DocumentApp.getActiveDocument().getSelection();
   if (selection) {
@@ -63,8 +95,17 @@ function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnot
         } else if (elem.getType() == DocumentApp.ElementType.LIST_ITEM) {
           var paragraph = elem.asListItem();
           paraout.push(paragraph);
+        } else if (elem.getType() == DocumentApp.ElementType.TABLE_CELL) {
+          var paragraphs = paragraphsFromTableCell(elem);
+          paraout.push(...paragraphs);
+        }else if (elem.getType() == DocumentApp.ElementType.TABLE_ROW){
+          var paragraphs = paragraphsFromTableRow(elem);
+          paraout.push(...paragraphs);
+        }else if (elem.getType() == DocumentApp.ElementType.TABLE){
+          var paragraphs = paragraphsFromTable(elem);
+          paraout.push(...paragraphs);
         } else {
-          DocumentApp.getUi().alert("Cursor is in object that is not paragraph or list item:" + element.getElement().getType() );
+          DocumentApp.getUi().alert("Cursor is in object that is not paragraph, table, table row, table cell or list item:" + element.getElement().getType());
         }
       }
     }
@@ -86,7 +127,7 @@ function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnot
       } else if (element.getType() == DocumentApp.ElementType.LIST_ITEM) {
         paragraph = element.asListItem();
         paraout.push(paragraph);
-      } else {      
+      } else {
         DocumentApp.getUi().alert("Cursor is in object that is not paragraph or list item: " + element.getParent().getType() + ", parent of " + element.getType());
       }
     } else {
@@ -104,7 +145,7 @@ function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnot
         var footnote = doc.getFootnotes();
         if (footnote) {
           // alert("Getting fn: "+footnote.length);
-          for(var i in footnote){
+          for (var i in footnote) {
             if (footnote[i].getFootnoteContents()) {
               var paragraphs = footnote[i].getFootnoteContents().getParagraphs();
               if (paragraphs) {
@@ -115,8 +156,8 @@ function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnot
                 };
               };
             } else {
-              var j = i+1;
-              alert("Footnote has no contents. Footnote number= "+j+". This appears to be a GDocs bug that happens if the footnote is suggested text only.");
+              var j = i + 1;
+              alert("Footnote has no contents. Footnote number= " + j + ". This appears to be a GDocs bug that happens if the footnote is suggested text only.");
             };
           }
         } else {
@@ -131,7 +172,7 @@ function getParagraphsInBodyAndFootnotesExtended(onePara,getBodyParas,getFootnot
 }
 
 // enterDeepLAPIkey, changeVersion (out-of-use) use the function
-function getValueFromUser(title,text, defaultOK, defaultCancel, defaultClose) {
+function getValueFromUser(title, text, defaultOK, defaultCancel, defaultClose) {
   text = text || "Please enter a value.";
   defaultOK = defaultOK || "";
   defaultCancel = defaultCancel || null;
@@ -141,14 +182,14 @@ function getValueFromUser(title,text, defaultOK, defaultCancel, defaultClose) {
     title = text;
     title = "BUtils";
   };
-  var result = DocumentApp.getUi().prompt(title,text, DocumentApp.getUi().ButtonSet.OK_CANCEL);
+  var result = DocumentApp.getUi().prompt(title, text, DocumentApp.getUi().ButtonSet.OK_CANCEL);
   // Process the user's response:
   if (result.getSelectedButton() == DocumentApp.getUi().Button.OK) {
     var res = result.getResponseText();
     // DocumentApp.getUi().alert('Result: '+res);
     if (res == "" && defaultOK) {
       return defaultOK;
-    } else {      
+    } else {
       return res;
     };
   } else if (result.getSelectedButton() == DocumentApp.getUi().Button.CANCEL) {
@@ -162,7 +203,7 @@ function getValueFromUser(title,text, defaultOK, defaultCancel, defaultClose) {
   return null;
 }
 
-function setBothTextColors(target,backgroundColor,foregroundColor) {
+function setBothTextColors(target, backgroundColor, foregroundColor) {
   // If no search parameter was provided, ask for one
   if (arguments.length == 0) {
     var ui = DocumentApp.getUi();
@@ -184,10 +225,10 @@ function setBothTextColors(target,backgroundColor,foregroundColor) {
 
     //Logger.log(url);
     if (backgroundColor) {
-      thisElementText.setBackgroundColor(searchResult.getStartOffset(), searchResult.getEndOffsetInclusive(),backgroundColor);
+      thisElementText.setBackgroundColor(searchResult.getStartOffset(), searchResult.getEndOffsetInclusive(), backgroundColor);
     };
     if (foregroundColor) {
-      thisElementText.setForegroundColor(searchResult.getStartOffset(), searchResult.getEndOffsetInclusive(),foregroundColor);
+      thisElementText.setForegroundColor(searchResult.getStartOffset(), searchResult.getEndOffsetInclusive(), foregroundColor);
     };
     // search for next match
     searchResult = bodyElement.findText(target, searchResult);
@@ -213,13 +254,13 @@ function alert(text) {
 };
 
 // out-of-use
-function alertv(text,myvariable) {
-  DocumentApp.getUi().alert(text+" = "+JSON.stringify(myvariable));
+function alertv(text, myvariable) {
+  DocumentApp.getUi().alert(text + " = " + JSON.stringify(myvariable));
 };
 
 // out-of-use
-function onlyUnique(value, index, self) { 
-    return self.indexOf(value) === index;
+function onlyUnique(value, index, self) {
+  return self.indexOf(value) === index;
 };
 
 // out-of-use
