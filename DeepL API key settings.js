@@ -1,13 +1,39 @@
 const PROPERTY_NAMES = {
+  // Legacy
   DEEPL: {
     propertyApiKeySettingsName: 'DEEPL_API_KEY_SETTINGS',
     propertyApiKeyName: 'DeepLAPIkey',
     textName: 'DeepL'
   },
+  // Legacy
   CHATGPT: {
     propertyApiKeySettingsName: 'CHATGPT_API_KEY_SETTINGS',
     propertyApiKeyName: 'ChatGPTAPIkey',
     textName: 'ChatGPT'
+  },
+  DeepL: {
+    propertyApiKeySettingsName: 'DEEPL_API_KEY_SETTINGS',
+    propertyApiKeyName: 'DeepLAPIkey',
+    textName: 'DeepL',
+    testKey: function (apiKey) {
+      return testDeeplKey(apiKey);
+    }
+  },
+  OpenAI: {
+    propertyApiKeySettingsName: 'CHATGPT_API_KEY_SETTINGS',
+    propertyApiKeyName: 'ChatGPTAPIkey',
+    textName: 'OpenAI',
+    testKey: function (apiKey) {
+      return testChatGPTKey(apiKey);
+    }
+  },
+  Anthropic: {
+    propertyApiKeySettingsName: 'ANTHROPIC_API_KEY_SETTINGS',
+    propertyApiKeyName: 'ANTHROPICAPIkey',
+    textName: 'Anthropic',
+    testKey: function (apiKey) {
+      return testAnthropicKey(apiKey);
+    }
   }
 };
 
@@ -45,7 +71,7 @@ function getDeeplApiKeySettings(tryToRetrieveProperties, translator) {
   return resultObj;
 }
 
-
+//Old
 function activateDeeplApiKeySettings(obj, translatorName) {
   const apiKeySettingsObj = translatorName === 'DEEPL' ? deeplApiKeySettings : chatGPTApiKeySettings;
   // Finds key in apiKeySettingsObj where value equals obj
@@ -54,6 +80,20 @@ function activateDeeplApiKeySettings(obj, translatorName) {
   userProperties.setProperty(translatorName + '_API_KEY_SETTINGS', settings);
   onOpen();
 }
+
+// 2024
+// DeepL, OpenAI, Anthropic
+// user, doc, ask
+function setDefaultAPIkey(provider, storage) {
+  const userProperties = PropertiesService.getUserProperties();
+  if (!['user', 'doc', 'ask'].includes(storage)){
+    return { status: 'error', message: 'Wrong storage name.'};
+  }
+  userProperties.setProperty(PROPERTY_NAMES[provider]['propertyApiKeySettingsName'], storage);
+  return { status: 'ok' };
+}
+
+
 
 // Menu items of DeepL API key settings
 const deeplApiKeySettings = {

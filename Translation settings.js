@@ -39,10 +39,21 @@ function clearTranslationSettings() {
   onOpen();
 }
 
+function getKeyExcludingNameAndForm(obj) {
+  for (let key in obj) {
+    if (obj.hasOwnProperty(key) && key !== 'name' && key !== 'form' && key !== 'label') {
+      return key;
+    }
+  }
+  return undefined;
+}
+
+
 function saveLanguage(finalSettings) {
-  //Logger.log('finalSettings=' + JSON.stringify(finalSettings));
+  Logger.log('finalSettings=' + JSON.stringify(finalSettings));
   const translationSettings = getTranslationSettings();
-  let newKey;
+  let newKey, realKey;
+  const newSource = new Object();
   if (finalSettings.source.google) {
     newKey = finalSettings.source.google;
   } else {
@@ -50,12 +61,23 @@ function saveLanguage(finalSettings) {
   }
 
   for (let i in finalSettings.targets) {
+    // if (finalSettings.targets[i].google) {
+    //   newKey += finalSettings.targets[i].google;
+    // } else if (finalSettings.targets[i].openAI) {
+    //   newKey += finalSettings.targets[i].openAI + 'AI';
+    // } else {
+    //   newKey += finalSettings.targets[i].deepL;
+    // }
     if (finalSettings.targets[i].google) {
       newKey += finalSettings.targets[i].google;
-    } else if (finalSettings.targets[i].openAI) {
-      newKey += finalSettings.targets[i].openAI + 'AI';
-    } else {
+      newSource.google = finalSettings.source.google;
+    } else if (finalSettings.targets[i].deepL) {
       newKey += finalSettings.targets[i].deepL;
+      newSource.deepL = finalSettings.source.deepL;
+    } else {
+      realKey = getKeyExcludingNameAndForm(finalSettings.targets[i]);
+      newKey += realKey;
+      newSource[realKey] = finalSettings.source[realKey];
     }
   }
 
@@ -64,6 +86,8 @@ function saveLanguage(finalSettings) {
       status: 'error', message: 'Error! ' + finalSettings.sourceTarget + ' has already been added to settings.'
     }
   }
+
+  finalSettings.source = newSource;
 
   translationSettings[newKey] = finalSettings;
 

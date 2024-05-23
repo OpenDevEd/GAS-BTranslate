@@ -1,6 +1,9 @@
 <script>
+  const LEGACY_OPENAI = 'GPT3.5-TURBO';
+
   let finalSettings;
   function handleFormSubmit(formObject) {
+    // console.log('translatorNames ', translatorNames);
     // google.script.run.withSuccessHandler(checkResults).withFailureHandler(onFailure).processParticipantsFormV2(formObject);
     let source, target, selectedSourceOrTarget;
     let toDoEl = document.getElementById('toDo');
@@ -46,26 +49,49 @@
       const sourceObj = SOURCES[source];
       const targetObj = TARGETS[target];
 
+// console.log(sourceObj);
+// console.log(targetObj);
       // Add openAI to source and target object
       if (sourceObj.google) {
-        sourceObj.openAI = sourceObj.google;
+        //sourceObj.openAI = sourceObj.google;
+        translatorNames.OpenAI.forEach(el => {
+          sourceObj[el] = sourceObj.google;
+        });
+        translatorNames.Anthropic.forEach(el => {
+          sourceObj[el] = sourceObj.google;
+        });
       }
 
       // allLanguages will be array of target languages
       let allLanguages;
+      let ptValue;
       if (targetObj.google) {
         // Not Chinese, English, Portuguese (not language groups)
-        targetObj.openAI = targetObj.google;
+        //targetObj.openAI = targetObj.google;
+        translatorNames.OpenAI.forEach(el => {
+          targetObj[el] = targetObj.google;
+        });
+        translatorNames.Anthropic.forEach(el => {
+          targetObj[el] = targetObj.google;
+        });
       } else {
         // Chinese, English, Portuguese (groups)
         if (!targetObj.deepL) {
           allLanguages = Object.keys(targetObj);
           for (let i in allLanguages) {
             if (targetObj[allLanguages[i]].deepL && allLanguages[i].includes('Portuguese')) {
-              targetObj[allLanguages[i]].openAI = targetObj[allLanguages[i]].deepL;
+              // targetObj[allLanguages[i]].openAI = targetObj[allLanguages[i]].deepL;
+              ptValue = targetObj[allLanguages[i]].deepL;
             } else if (targetObj[allLanguages[i]].google && !allLanguages[i].includes('Portuguese')) {
-              targetObj[allLanguages[i]].openAI = targetObj[allLanguages[i]].google;
+              // targetObj[allLanguages[i]].openAI = targetObj[allLanguages[i]].google;
+              ptValue = targetObj[allLanguages[i]].google;
             }
+            translatorNames.OpenAI.forEach(el => {
+              targetObj[allLanguages[i]][el] = ptValue;
+            });
+            translatorNames.Anthropic.forEach(el => {
+              targetObj[allLanguages[i]][el] = ptValue;
+            });
           }
         }
       }
@@ -96,13 +122,13 @@
 
       if (allTranslators.length == 1) {
         toDoEl.value = 'confirm';
-        divToDoHeader.innerHTML = 'Please confirm';
+        divToDoHeader.innerHTML = 'Translation engine Google. Please confirm.';
         const trGoogle = JSON.parse(allTranslators[0]['value']);
         finalSettings = { "sourceTarget": source + "->" + target, "source": SOURCES[source], "targets": [{ "name": target, "google": trGoogle['google'] }] };
       } else {
         toDoEl.value = 'selectSettings';
         //console.log('selectSettings');
-        divToDoHeader.innerHTML = "Select the translation engines. For DeepL and ChatGPT, API keys are required. For 'footnote mode', the first of these engines provides the main translation, the other engines provide the text for the footnotes.";
+        divToDoHeader.innerHTML = "Select the translation engines. For Anthropic, DeepL, and OpenAI, API keys are required. For 'footnote mode', the first of these engines provides the main translation, the other engines provide the text for the footnotes.";
         createCheckboxList(allTranslators, source, target);
         document.getElementById('submitButton').disabled = true;
       }
@@ -234,8 +260,15 @@
     if (targetObj.google != null) {
       allTranslators.push({ label: 'Google ' + lang, value: `{"name":"${lang}", "google":"${targetObj.google}"}` });
     }
-    if (sourceObj.openAI != null && targetObj.openAI != null) {
-      allTranslators.push({ label: 'ChatGPT ' + lang, value: `{"name":"${lang}", "openAI":"${targetObj.openAI}"}` });
+
+    const keys = Object.keys(translatorNames);
+    for (let k in keys){
+      translatorNames[keys[k]].forEach(el => {
+        if (sourceObj[el] != null && targetObj[el] != null) {
+          const trName = el === 'openAI' ? LEGACY_OPENAI : el;
+          allTranslators.push({ label: `${keys[k]} ${trName} ${lang}`, value: `{"label":"${keys[k]} ${trName}", "name":"${lang}", "${el}":"${targetObj[el]}"}` });
+        }
+      });
     }
   }
 
@@ -315,10 +348,10 @@
             text += 'informal ';
           }
         }
-      } else if (targetObj.openAI != null) {
-        text = 'ChatGPT ';
-      } else {
+      } else if (targetObj.google != null) {
         text = 'Google ';
+      } else {
+        text = targetObj.label + ' ';
       }
       text += targetObj.name;
       stDiv.appendChild(document.createTextNode(text));

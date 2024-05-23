@@ -12,6 +12,7 @@
 		<div id="toDoHeader" class="toDoHeader">Select the source language. Note that this only provides a hint to the translator. Scroll down and select Next.</div>
    <!--- <div id="toDoDesc" class="toDoDesc">Select the source language. Note that this only provides a hint to the translator. Scroll down and select Next.</div> -->
 </div>
+<script> const translatorNames = <?!= forJsExtractTranslatorNamesLLM(); ?></script>
 		<form id="languageSelectionForm" onsubmit="handleFormSubmit(this);">
 			
 			<div class="form-group" id="form-group"  style="padding-top: 10px;">

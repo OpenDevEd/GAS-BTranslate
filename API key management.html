@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Key Management Sidebar</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <style scoped>
+    @import url('https://fonts.googleapis.com/css2?family=Ubuntu&display=swap');
+
+    body {
+      font-family: 'Ubuntu', sans-serif;
+      color: #333333;
+    }
+
+    .success-bg {
+      background-color: lightgreen;
+    }
+
+    .error-bg {
+      background-color: gray;
+    }
+
+    .error {
+      color: red;
+      font-size: 0.8em;
+      display: flex;
+      margin-bottom: 0px;
+    }
+
+    .error-big {
+      color: red;
+      font-size: 1.2em;
+      display: flex;
+    }
+
+    .form-input {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-input input {
+      margin-bottom: 5px;
+    }
+
+    .provider-row {
+      margin-bottom: 20px;
+      padding: 10px;
+    }
+
+    .provider-row table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .provider-row th,
+    .provider-row td {
+      width: 50%;
+      text-align: center;
+      padding: 5px;
+    }
+
+    .provider-row th {
+      background-color: #E68225;
+      color: #FFFFFF;
+    }
+
+    .provider-row td button {
+      margin-right: 5px;
+    }
+
+    .legend {
+      margin-bottom: 20px;
+    }
+
+    .legend-item {
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    .default-key {
+      display: inline-block;
+      margin-top: 10px;
+    }
+
+    .legend-color {
+      border: 1px solid #000000;
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .without-frame {
+      border: 0px solid #000000;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      margin-right: 5px;
+      margin-left: 1px;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 1.2em;
+    }
+
+    .translators {
+      border-top: 1px dashed #000000;
+      margin-top: 5px;
+      padding-top: 10px;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    .form-input label {
+      margin-top: 15px;
+      margin-bottom: 5px;
+    }
+
+    .form-input textarea {
+      margin-top: 5px;
+      margin-bottom: 5px;
+      width: 100%
+    }
+
+    .provider-row td button {
+      margin-top: 2px;
+      margin-bottom: 2px;
+      margin-right: 2px;
+    }
+
+    input[type="radio"] {
+      margin: 10px 0 10px 0px;
+      accent-color: #E68225;
+    }
+
+    .one-translator {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    h4 {
+      margin: 0;
+      font-size: 1.2em
+    }
+
+    button {
+      margin-top: 10px;
+    }
+
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--track-gradient, linear-gradient(to right, #ddd 50%, #ddd 100%));
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background-color: #E68225;
+      border-radius: 50%;
+      margin-top: -4px;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline-color: #000000;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="legend">
+      <div class="legend-item"> <span class="legend-color success-bg"></span> API key works</div>
+      <div class="legend-item"> <span class="legend-color error-bg"></span> API key doesn't work</div>
+      <div class="legend-item"> <span class="legend-color"></span> API key wasn't added</div>
+      <div class="legend-item default-key"> <span class="legend-color without-frame">*</span> Default API key</div>
+    </div>
+
+    <div v-for="(provider, providerName) in providers" :key="providerName" class="provider-row">
+      <h3>{{ providerName }}</h3>
+      <table>
+        <tr>
+          <th>{{ getUserStorageColumnName(provider.user) }}</th>
+          <th>{{ getDocStorageColumnName(provider.doc) }}</th>
+        </tr>
+        <tr>
+          <td :class="getUserStorageClass(provider.user)">
+            <div v-if="provider.user.added && provider.user.works">
+              <button @click="showEditForm(providerName, 'user')" :disabled="isProcessing" title="Edit API key">Edit</button>
+              <button @click="removeKey(providerName, 'user')" :disabled="isProcessing" title="Remove API key">Del</button>
+              <button v-if="provider.user.added" @click="copyToDoc(providerName, 'user')" :disabled="isProcessing" title="Copy API key to Doc storage">Copy</button>
+            </div>
+            <div v-else-if="!provider.user.added">
+              <button @click="showAddForm(providerName, 'user')" :disabled="isProcessing" title="Add API key">Add</button>
+            </div>
+            <div v-else>
+              <button @click="showEditForm(providerName, 'user')" :disabled="isProcessing" title="Edit API key">Edit</button>
+              <button @click="removeKey(providerName, 'user')" :disabled="isProcessing" title="Remove API key">Del</button>
+            </div>
+
+          </td>
+          <td :class="getDocStorageClass(provider.doc)">
+            <div v-if="provider.doc.added && provider.doc.works">
+              <button @click="showEditForm(providerName, 'doc')" :disabled="isProcessing" title="Edit API key">Edit</button>
+              <button @click="removeKey(providerName, 'doc')" :disabled="isProcessing" title="Remove API key">Del</button>
+            </div>
+            <div v-else-if="!provider.doc.added">
+              <button @click="showAddForm(providerName, 'doc')" :disabled="isProcessing" title="Add API key">Add</button>
+            </div>
+            <div v-else>
+              <button @click="showEditForm(providerName, 'doc')" :disabled="isProcessing" title="Edit API key">Edit</button>
+              <button @click="removeKey(providerName, 'doc')" :disabled="isProcessing" title="Remove API key">Del</button>
+            </div>
+
+          </td>
+        </tr>
+        <tr>
+          <td :class="getUserStorageClass(provider.user)">
+            <button v-if="!provider.user.default" @click="setDefaultAPIkey(providerName, 'user', true)" :disabled="isProcessing" title="Set as default API key">Set as default</button>
+          </td>
+          <td :class="getDocStorageClass(provider.doc)">
+            <button v-if="!provider.doc.default" @click="setDefaultAPIkey(providerName, 'doc', true)" :disabled="isProcessing" title="Set as default API key">Set as default</button>
+          </td>
+        </tr>
+        <tr>
+          <td colspan=2>
+            <div v-if="provider.user.default || provider.doc.default">
+              <button @click="setDefaultAPIkey(providerName, 'ask', false)" :disabled="isProcessing">Always ask which key to use</button>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <div v-if="showFormFor === `${providerName}-${storage}`" class="form-input">
+        <label>{{ labelText }}</label>
+        <input v-model="newKey" :placeholder="placeholderText" :disabled="isProcessing" />
+        <button :disabled="!newKey || isProcessing" @click="handleFormSubmit(providerName, storage, actionType)">Save</button>
+      </div>
+      <div v-if="showMessageFor === `${providerName}-${storage}`" class="form-input">{{ message }}</div>
+
+      <div v-if="provider.tr && (provider.user.works || provider.doc.works)" class="translators">
+        <button v-if="showTranslatorsFor !== providerName" @click="showTranslators(providerName)" :disabled="isProcessing">{{ provider.tr ? 'Add/Remove translators' : 'Cannot add translators' }}</button>
+      </div>
+      <div v-if="showTranslatorsFor === providerName" class="form-input">
+        <h4>Translators</h4>
+        <div v-for="(translator, index) in arrayTranslators" :key="index" class="one-translator">
+          <div>{{ translator.name }}
+            <button @click="deleteTranslator(providerName, index, translator.name)" :disabled="isProcessing">Del</button>
+          </div>
+          <div>Model: {{ translator.model }}</div>
+          <div>Temperature: {{ translator.temperature }}</div>
+          <div>Max tokens: {{ translator.maxTokens }}</div>
+          <div>{{ translator.useDefaultPrompt ? "Default prompt" : "Custom prompt" }}:</div>
+          <code>{{ translator.useDefaultPrompt ? Settings.defaultPrompt : translator.customPrompt }}</code>
+        </div>
+
+        <div v-if="addShowDelTranslatorError === true" class="error-big">{{ addShowDelTranslatorMessage }}</div>
+
+        <h4>Add new translator</h4>
+        <label>Translator name:</label>
+        <input v-model="newTranslator.name" maxlength="15" placeholder="Enter translator name" @input="touchedForm = true">
+        <span v-if="!isValidName(newTranslator.name) && touchedForm" class="error">Name must consist of letters, numbers, - and _ only.</span>
+        <span v-if="touchedForm && isOneOfReserved(newTranslator.name)" class="error">Don't use {{translatorNames.join(', ')}} as translator's name.</span>
+
+
+        <div class="radio-container">
+          <input type="radio" id="defaultPrompt" v-model="newTranslator.useDefaultPrompt" :value="true">
+          <label for="defaultPrompt" class = "prompt-label">Default prompt</label>
+          <div v-if="newTranslator.useDefaultPrompt">
+            <code>{{ Settings.defaultPrompt }}</code>
+          </div>
+        </div>
+        <div class="radio-container">
+          <input type="radio" id="customPrompt" v-model="newTranslator.useDefaultPrompt" :value="false">
+          <label for="customPrompt" class = "prompt-label">Custom prompt</label>
+          <div v-if="!newTranslator.useDefaultPrompt">
+            <textarea v-model="newTranslator.customPrompt" maxlength="100" placeholder="Enter custom prompt"  @input="touchedForm = true"></textarea>
+            <span v-if="newTranslator.customPrompt === '' && touchedForm" class="error">Enter custom prompt.</span>
+            <span v-if="!isValidPrompt(newTranslator.customPrompt) && touchedForm" class="error">Custom prompt must contain &lt;T&gt; placeholder (target translation language)</span>
+          </div>
+        </div>
+
+
+        <label>Model:</label>
+        <select v-model="newTranslator.model" @change="touchedForm = true; updateMaxTokens()">
+          <option v-for="model in Settings.arrayAllModels" :value="model" :key="model">{{ model }}</option>
+        </select>
+        <span v-if="newTranslator.model === '' && touchedForm" class="error">Select a model.</span>
+
+        <label>Temperature: {{ newTranslator.temperature }}</label>
+        <input type="range" ref="temperatureSlider" v-model.number="newTranslator.temperature" :min="Settings.temperature.min" :max="Settings.temperature.max" :step="Settings.temperature.step" @input="touchedForm = true; updateSliderOnChange($event)">
+
+        <label>Max Tokens: {{ newTranslator.maxTokens }}</label>
+        <input type="range" ref="maxTokensSlider" v-model.number="newTranslator.maxTokens" :min="Settings.maxTokens.min" :max="Settings.maxTokens.max" :step="Settings.maxTokens.step" @input="touchedForm = true; updateSliderOnChange($event)">
+        <span v-if="newTranslator.maxTokens === 0 && touchedForm" class="error">Max tokens cannot be 0.</span>
+
+        <button @click="saveTranslator(providerName)" :disabled="isProcessing || !canSaveTranslator()">Save</button>
+
+      </div>
+    </div>
+
+
+    <script>
+      new Vue({
+ el: '#app',
+ data: {
+   providers: <?!= allProviders(); ?>,
+   translatorNames: <?!= extractTranslatorNames(); ?>,
+   newKey: '',
+   showFormFor: '',
+   labelText: '',
+   message: '',
+   showMessageFor: '',
+   storage: '',
+   actionType: '',
+   placeholderText: '',
+   actionButtonText: '',
+   isProcessing: false,
+   touchedForm: false,
+   addShowDelTranslatorError: false,
+   addShowDelTranslatorMessage: '',
+   showTranslatorsFor: '',
+   arrayTranslators: [],
+   newTranslator: {
+      name: '',
+      model: '',
+      temperature: 0,
+      maxTokens: 4000,
+      useDefaultPrompt: true,
+      customPrompt: '',
+      defaultPrompt: ''
+   },
+   Settings: {
+     arrayAllModels: ["opus", "sonnet", "haiku"],
+     maxTokens: { min: 0, max: 4000, step: 1 },
+     temperature: { min: 0, max: 1, step: 0.1 },
+   }
+ },
+ methods: {
+   getUserStorageClass(userStorage) {
+     if (userStorage.added && userStorage.works) {
+       return 'success-bg';
+     } else if (!userStorage.added) {
+       return '';
+     } else {
+       return 'error-bg';
+     }
+   },
+   getDocStorageClass(docStorage) {
+     if (docStorage.added && docStorage.works) {
+       return 'success-bg';
+     } else if (!docStorage.added) {
+       return '';
+     } else {
+       return 'error-bg';
+     }
+   },
+   showAddForm(provider, storage) {
+     this.clearForm();
+     this.showFormFor = `${provider}-${storage}`;
+     this.newKey = '';
+     this.storage = storage;
+     this.actionType = 'add';
+     this.placeholderText = `Enter ${provider} API key`;
+     this.actionButtonText = 'Save';
+     this.labelText = `${provider} API key for ${storage} storage`;
+   },
+   showEditForm(provider, storage) {
+     this.clearForm();
+     this.showFormFor = `${provider}-${storage}`;
+     this.newKey = this.providers[provider][storage].key;
+     this.storage = storage;
+     this.actionType = 'edit';
+     this.placeholderText = `Enter ${provider} API key`;
+     this.actionButtonText = 'Save';
+     this.labelText = `${provider} API key for ${storage} storage`;
+   },
+   handleFormSubmit(provider, storage, actionType) {
+     this.isProcessing = true;
+     const action = actionType === 'add' ? 'saveApiKey' : 'updateApiKey';
+     google.script.run
+       .withSuccessHandler((result) => this.handleActionSuccess(result, provider, storage, actionType))
+       .withFailureHandler((error) => this.handleActionFailure(error, provider, storage))
+       [action](provider, storage, this.newKey);
+   },
+   handleActionSuccess(result, provider, storage, actionType) {
+     this.showFormFor = '';
+     this.isProcessing = false;
+     if (result.status === 'ok') {
+       if (actionType === 'add' || actionType === 'edit') {
+         this.providers[provider][storage].added = true;
+         this.providers[provider][storage].works = true;
+         delete this.providers[provider][storage].key;
+         this.message = `${provider} API key was successfully ${actionType === 'add' ? 'added' : 'updated'}`;
+       } else if (actionType === 'remove') {
+         this.providers[provider][storage].added = false;
+         this.providers[provider][storage].works = false;
+         delete this.providers[provider][storage].key;
+         this.message = `${provider} API key was successfully removed.`;
+       } else if (actionType === 'copy') {
+         this.providers[provider].doc.added = true;
+         this.providers[provider].doc.works = true;
+         delete this.providers[provider][storage].key;
+         this.message = `${provider} API key was successfully copied to the document storage.`;
+       }
+       this.showMessageFor = `${provider}-${storage}`;
+     } else {
+       this.message = result.message;
+       this.showMessageFor = `${provider}-${storage}`;
+     }
+   },
+   handleActionFailure(error, provider, storage) {
+     this.isProcessing = false;
+     this.message = `Failed to ${this.actionType} API key: ${error}`;
+     this.showMessageFor = `${provider}-${storage}`;
+   },
+   removeKey(provider, storage) {
+     this.clearForm();
+     this.storage = storage;
+     this.actionType = 'remove';
+     const action = 'removeApiKey';
+     google.script.run
+       .withSuccessHandler((result) => this.handleActionSuccess(result, provider, storage, this.actionType))
+       .withFailureHandler((error) => this.handleActionFailure(error, provider, storage))
+       [action](provider, storage);
+   },
+   copyToDoc(provider, storage) {
+     this.clearForm();
+     this.storage = storage;
+     this.actionType = 'copy';
+     const action = 'copyUserApiKeyToDocStorage';
+     google.script.run
+       .withSuccessHandler((result) => this.handleActionSuccess(result, provider, storage, this.actionType))
+       .withFailureHandler((error) => this.handleActionFailure(error, provider, storage))
+       [action](provider);
+   },
+
+
+
+    errorInfo(message){
+      this.addShowDelTranslatorError = true;
+      this.addShowDelTranslatorMessage = message;
+    },
+    updateSliderOnChange(event) {
+      const slider = event.target;
+      const min = slider.min || 0;
+      const max = slider.max || 100;
+      const sliderValue = slider.value;
+      this.updateSlider(slider, min, max, sliderValue);
+    },
+    updateSliderBySelector(id, min, max, sliderValue) {
+      const slider = this.$el.querySelector(`input[type="range"]:nth-of-type(${id})`);     
+      this.updateSlider(slider, min, max, sliderValue);
+    },
+    updateSlider(slider, min, max, sliderValue) {
+      const value = ((sliderValue - min) / (max - min)) * 100;
+      slider.style.setProperty('--track-gradient', `linear-gradient(to right, #E68225 0%, #E68225 ${value}%, #ddd ${value}%, #ddd 100%)`);
+    },
+
+   showTranslators(provider) {
+     this.clearForm();
+     this.isProcessing = true;
+     this.showTranslatorsFor = provider;
+     google.script.run
+       .withSuccessHandler((result) => {
+         this.arrayTranslators = result.arrayTranslators;
+         this.Settings = result.settings;
+         this.newTranslator.model = this.Settings.arrayAllModels[0];
+         this.Settings.maxTokens.max = this.Settings.maxTokensForModel[0];
+         this.newTranslator.maxTokens = this.Settings.maxTokens.max;
+         this.updateMaxTokens();
+         this.isProcessing = false;
+       })
+       .withFailureHandler((error) => {
+         this.isProcessing = false;
+         this.errorInfo(`Failed to show list of translators: ${error}`);
+       })       
+       .getTranslators(provider);
+   },
+   deleteTranslator(provider, index, translatorName) {
+    this.addShowDelTranslatorError = false;
+    this.addShowDelTranslatorMessage = '';
+    this.isProcessing = true;
+    this.touchedForm = false;
+     google.script.run
+       .withSuccessHandler((result) => {
+         this.isProcessing = false;
+         if (result.status === 'ok') {
+          this.arrayTranslators = result.arrayTranslators;
+          this.translatorNames = result.translatorNames;
+         } else {
+           this.errorInfo(`Failed to delete translator: ${result.message}`);
+         }
+       })
+       .withFailureHandler((error) => {
+         this.isProcessing = false;
+         this.errorInfo(`Failed to delete translator: ${error}`);
+       })
+       .delTranslator(provider, index, translatorName);
+   },
+   saveTranslator(provider) {
+    this.addShowDelTranslatorError = false;
+    this.addShowDelTranslatorMessage = '';
+    this.touchedForm = false;
+    this.isProcessing = true;
+     google.script.run
+       .withSuccessHandler((result) => {
+          this.isProcessing = false;
+          this.touchedForm = false;
+          if (result.status === 'ok') {
+            this.arrayTranslators = result.arrayTranslators;
+            this.Settings = result.settings;
+            this.Settings.maxTokens.max = this.Settings.maxTokensForModel[0];
+            this.newTranslator = {
+              name: '',
+              model: this.Settings.arrayAllModels[0],
+              temperature: 0,
+              maxTokens: this.Settings.maxTokens.max,
+              useDefaultPrompt: true,
+              customPrompt: '',
+              defaultPrompt: ''
+            };
+
+            this.updateMaxTokens();
+
+            const min = this.Settings.temperature.min;
+            const max = this.Settings.temperature.max;
+            const sliderValue = this.newTranslator.temperature;
+            this.updateSliderBySelector(2, min, max, sliderValue);
+         } else {
+           this.errorInfo(`Failed to add translator: ${result.message}`);
+         }
+       })
+       .withFailureHandler((error) => {
+         this.isProcessing = false;
+         this.touchedForm = false;
+         this.errorInfo(`Failed to add translator: ${error}`);
+       })
+       .saveTranslator(provider, this.newTranslator);
+   },
+
+    updateMaxTokens(){
+          const oldMaxTokens = this.newTranslator.maxTokens;
+          const index = this.Settings.arrayAllModels.indexOf(this.newTranslator.model);
+          const newMaxTokens = index !== -1 ? this.Settings.maxTokensForModel[index] : 4000;
+          this.Settings.maxTokens.max = newMaxTokens;
+          if (oldMaxTokens > newMaxTokens){
+            this.newTranslator.maxTokens = newMaxTokens;
+          }
+          const min = this.Settings.maxTokens.min;
+          const max = this.Settings.maxTokens.max;
+          const sliderValue = this.newTranslator.maxTokens;
+          this.updateSliderBySelector(3, min, max, sliderValue);
+    },
+
+    isValidName(name) {
+        return /^[a-zA-Z0-9_\-]+$/.test(name);
+    },
+    isOneOfReserved(name) {
+        return new RegExp('^' + this.translatorNames.join('|') + '$', 'i').test(name);
+    },
+    isValidPrompt(prompt) {
+        return /<T>/.test(prompt);
+    },
+    canSaveTranslator() {
+        return this.isValidName(this.newTranslator.name) 
+        && !this.isOneOfReserved(this.newTranslator.name) 
+        && this.newTranslator.model 
+        && this.newTranslator.maxTokens > 0
+        && (this.newTranslator.useDefaultPrompt || this.isValidPrompt(this.newTranslator.customPrompt));
+    },
+
+   clearForm() {
+     //this.touchedForm = false;
+     this.addShowDelTranslatorError = false;
+     this.addShowDelTranslatorMessage = '';     
+     this.showFormFor = '';
+     this.newKey = '';
+     this.storage = '';
+     this.actionType = '';
+     this.placeholderText = '';
+     this.actionButtonText = '';
+     this.message = '';
+     this.showMessageFor = '';
+     this.labelText = '';
+     this.showTranslatorsFor = '';
+     this.arrayTranslators = [];
+     this.newTranslator = {
+       name: '',
+       model: '',
+       temperature: 0,
+       maxTokens: 0,
+       useDefaultPrompt: true,
+       customPrompt: '',
+       defaultPrompt: ''
+     };
+   },
+
+  getUserStorageColumnName(userStorage) {
+    return userStorage.default ? "User Storage*" : "User Storage";
+  },
+  getDocStorageColumnName(docStorage) {
+    return docStorage.default ? "Doc Storage*" : "Doc Storage";
+  },
+  setDefaultAPIkey(providerName, storage, isDefault) {
+    this.isProcessing = true;
+    const action = 'setDefaultAPIkey';
+    google.script.run
+      .withSuccessHandler((result) => this.handleDefaultAPIkeySuccess(result, providerName, storage, isDefault))
+      .withFailureHandler((error) => this.handleDefaultAPIkeyFailure(error, providerName, storage))
+      [action](providerName, storage, isDefault);
+  },
+  handleDefaultAPIkeySuccess(result, providerName, storage, isDefault) {
+    this.isProcessing = false;
+    if (result.status === 'ok') {
+      if (storage === 'user') {
+        this.providers[providerName].user.default = isDefault;
+        this.providers[providerName].doc.default = !isDefault;
+      } else if (storage === 'doc') {
+        this.providers[providerName].doc.default = isDefault;
+        this.providers[providerName].user.default = !isDefault;
+      } else if (storage === 'ask') {
+        this.providers[providerName].user.default = false;
+        this.providers[providerName].doc.default = false;
+      }
+      this.message = result.message;
+      this.showMessageFor = `${providerName}-${storage}`;
+    } else {
+      this.message = result.message;
+      this.showMessageFor = `${providerName}-${storage}`;
+    }
+  },
+  handleDefaultAPIkeyFailure(error, providerName, storage) {
+    this.isProcessing = false;
+    this.message = `Failed to set default API key: ${error}`;
+    this.showMessageFor = `${providerName}-${storage}`;
+  }
+
+ }
+});
+    </script>
+</body>
+
+</html>

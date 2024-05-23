@@ -1,14 +1,14 @@
 // buildMenu, submenu_09_translate_full use the function
 function submenu_09_translate_basic(e) {
-  let tryToRetrieveProperties, 
-  actionNameDeepLUser = actionNameDeepLDoc = actionNameChatGPTUser = actionNameChatGPTDoc = 'Add/change';
+  let tryToRetrieveProperties, label;
+  // actionNameDeepLUser = actionNameDeepLDoc = actionNameChatGPTUser = actionNameChatGPTDoc = 'Add/change';
   const TrMenu = DocumentApp.getUi().createMenu('bTranslate');
 
   if (e && e.authMode == ScriptApp.AuthMode.NONE) {
     TrMenu.addItem('Activate menu', 'activateMenu');
     tryToRetrieveProperties = false;
   } else {
-    const deeplApiKeyUser = getDeepLAPIkey('user', 'DeepLAPIkey');
+    /* const deeplApiKeyUser = getDeepLAPIkey('user', 'DeepLAPIkey');
     actionNameDeepLUser = deeplApiKeyUser == null ? 'Add' : 'Change';
 
     const deeplApiKeyDoc = getDeepLAPIkey('doc', 'DeepLAPIkey');
@@ -18,7 +18,7 @@ function submenu_09_translate_basic(e) {
     actionNameChatGPTUser = chatGPTApiKeyUser == null ? 'Add' : 'Change';
 
     const chatGPTApiKeyDoc = getDeepLAPIkey('doc', 'ChatGPTAPIkey');
-    actionNameChatGPTDoc = chatGPTApiKeyDoc == null ? 'Add' : 'Change';
+    actionNameChatGPTDoc = chatGPTApiKeyDoc == null ? 'Add' : 'Change'; */
 
     tryToRetrieveProperties = true;
   }
@@ -31,45 +31,60 @@ function submenu_09_translate_basic(e) {
       translators = [];
       key = translationSettings.menuOrder[i];
       // List of translators
-      for (let j in translationSettings[key].targets) {
-        if (translationSettings[key].targets[j].hasOwnProperty('deepL')) {
-          if (translationSettings[key].targets[j].form == 'default') {
-            formality = '';
+      if (translationSettings[key]) {
+        for (let j in translationSettings[key].targets) {
+          if (translationSettings[key].targets[j].hasOwnProperty('deepL')) {
+            if (translationSettings[key].targets[j].form == 'default') {
+              formality = '';
+            } else {
+              formality = translationSettings[key].targets[j].form == 'less' ? ' informal' : ' formal';
+            }
+            // if (['EN-US', 'EN-GB', 'PT-BR', 'PT-PT'].includes(translationSettings[key].targets[j].deepL)) {
+            //   version = ' ' + translationSettings[key].targets[j].deepL;
+            // } else {
+            //   version = '';
+            // }
+            version = chineseEnglishPortugueseVersionHelper(['EN-US', 'EN-GB', 'PT-BR', 'PT-PT'], translationSettings[key].targets[j].deepL);
+            translators.push('DeepL' + version + formality);
+          } else if (translationSettings[key].targets[j].hasOwnProperty('google')) {
+            // if (['zh-CN', 'zh-TW'].includes(translationSettings[key].targets[j].google)) {
+            //   version = ' ' + translationSettings[key].targets[j].google;
+            // } else {
+            //   version = '';
+            // }
+            version = chineseEnglishPortugueseVersionHelper(['zh-CN', 'zh-TW'], translationSettings[key].targets[j].google);
+            translators.push('Google' + version);
           } else {
-            formality = translationSettings[key].targets[j].form == 'less' ? ' informal' : ' formal';
+            const trLLM = getKeyExcludingNameAndForm(translationSettings[key].targets[j])
+            version = chineseEnglishPortugueseVersionHelper(['zh-CN', 'zh-TW', 'PT-BR', 'PT-PT'], translationSettings[key].targets[j][trLLM]);
+
+            label = translationSettings[key].targets[j].label;
+            if (label == null) {
+              label = 'OpenAI ' + LEGACY_OPENAI;
+            }
+            translators.push(label + version);
           }
-          if (['EN-US', 'EN-GB', 'PT-BR', 'PT-PT'].includes(translationSettings[key].targets[j].deepL)) {
-            version = ' ' + translationSettings[key].targets[j].deepL;
-          } else {
-            version = '';
-          }
-          translators.push('DeepL' + version + formality);
+
+          /*if (translationSettings[key].targets[j].hasOwnProperty('openAI')) {
+            if (['PT-BR', 'PT-PT'].includes(translationSettings[key].targets[j].openAI)) {
+              version = ' ' + translationSettings[key].targets[j].openAI;
+            } else {
+              version = '';
+            }
+            translators.push('ChatGPT' + version);
+          }*/
+
         }
-        if (translationSettings[key].targets[j].hasOwnProperty('google')) {
-          if (['zh-CN', 'zh-TW'].includes(translationSettings[key].targets[j].google)) {
-            version = ' ' + translationSettings[key].targets[j].google;
-          } else {
-            version = '';
-          }
-          translators.push('Google' + version);
+
+        // End. List of translators
+        let trSlotName = `tra ${j} ${translationSettings[key].sourceTarget} (${translators.join(', ')})`;
+        if (trSlotName.length > 50) {
+          trSlotName = trSlotName.replaceAll(' formal', ' f.');
+          trSlotName = trSlotName.replaceAll(' informal', ' inf.');
         }
-        if (translationSettings[key].targets[j].hasOwnProperty('openAI')) {
-          if (['PT-BR', 'PT-PT'].includes(translationSettings[key].targets[j].openAI)) {
-            version = ' ' + translationSettings[key].targets[j].openAI;
-          } else {
-            version = '';
-          }          
-          translators.push('ChatGPT' + version);
-        }        
+        TrMenu.addItem(trSlotName, 'translationSlots.s' + j + '.run');
+        j++;
       }
-      // End. List of translators
-      let trSlotName = `tra ${j} ${translationSettings[key].sourceTarget} (${translators.join(', ')})`;
-      if (trSlotName.length > 50){
-        trSlotName = trSlotName.replaceAll(' formal', ' f.');
-        trSlotName = trSlotName.replaceAll(' informal', ' inf.');
-      }
-      TrMenu.addItem(trSlotName, 'translationSlots.s' + j + '.run');
-      j++;
     }
 
     if (j == 1) {
@@ -96,18 +111,9 @@ function submenu_09_translate_basic(e) {
 
   /* end of main items */
 
-  /* start submenu 1: Utilities */
-  TrMenu.addSubMenu(DocumentApp.getUi().createMenu('Utilities')
-    .addItem('sps split paragraphs to sentences [select paragraphs or place cursor in para] pts', 'splitParasInDocumentB')
-    .addItem('spt split off selected text [select text]', 'splitOffSelectedText')
-    .addItem('spp split off selected text, then paras [select text]', 'splitOffSelectedText_thenSplitParas')
-    .addItem('mps merge sentences to paragraphs [select paragraphs] stp', 'mergeParasInDocumentB')
-    .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
-  );
-  /* end submenu 1 */
-
   /* start submenu 2: Manage DeepL API */
   /* Note: API key used in 09c */
+  /*
   const submenu2 = DocumentApp.getUi().createMenu('Manage DeepL API');
   submenu2.addItem(actionNameDeepLUser + ' DeepL API key for user / all documents', 'enterDeepLAPIkeyUser')
     .addItem('Remove DeepL API key for user / all documents', 'removeDeepLAPIkeyUser')
@@ -125,14 +131,14 @@ function submenu_09_translate_basic(e) {
 
   submenu2.addSeparator()
     .addItem('gdlu get DeepL usage and costs', 'getDeepLUsage');
-
+*/
   /* end submenu: Manage DeepL API */
 
-  TrMenu.addSubMenu(submenu2);
+  //TrMenu.addSubMenu(submenu2);
 
   /* start submenu 3: Manage ChatGPT API */
   /* Note: API key used in 09e */
-  const submenu3 = DocumentApp.getUi().createMenu('Manage ChatGPT API');
+  /* const submenu3 = DocumentApp.getUi().createMenu('Manage ChatGPT API');
   submenu3.addItem(actionNameChatGPTUser + ' ChatGPT API key for user / all documents', 'enterChatGPTAPIkeyUser')
     .addItem('Remove ChatGPT API key for user / all documents', 'removeChatGPTAPIkeyUser')
     .addItem('Copy user ChatGPT API key to document', 'copyUserChatGPTApiKeyToDocument')
@@ -146,13 +152,36 @@ function submenu_09_translate_basic(e) {
     selectedSettingsMarker = settings == activeChatGPTApiKeySettings.settings ? activeChatGPTApiKeySettings.marker + ' ' : '  ';
     submenu3.addItem(selectedSettingsMarker + chatGPTApiKeySettings[settings].menuText, 'chatGPTApiKeySettings.' + settings + '.run');
   }
-
+  */
   /* end submenu: Manage ChatGPT API */
 
-  TrMenu.addSubMenu(submenu3);
+  //TrMenu.addSubMenu(submenu3);
+
+  TrMenu.addItem('API key management', 'apiKeyManagementSidebar');
+
+  /* start submenu 1: Utilities */
+  TrMenu.addSubMenu(DocumentApp.getUi().createMenu('Utilities')
+    .addItem('sps split paragraphs to sentences [select paragraphs or place cursor in para] pts', 'splitParasInDocumentB')
+    .addItem('spt split off selected text [select text]', 'splitOffSelectedText')
+    .addItem('spp split off selected text, then paras [select text]', 'splitOffSelectedText_thenSplitParas')
+    .addItem('mps merge sentences to paragraphs [select paragraphs] stp', 'mergeParasInDocumentB')
+    .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
+  );
+  /* end submenu 1 */
+
+  TrMenu.addItem('gdlu get DeepL usage and costs', 'getDeepLUsage');
 
   return TrMenu;
 };
+
+function chineseEnglishPortugueseVersionHelper(array, target) {
+  if (array.includes(target)) {
+    version = ' ' + target;
+  } else {
+    version = '';
+  }
+  return version;
+}
 
 function activateMenu() {
   onOpen();

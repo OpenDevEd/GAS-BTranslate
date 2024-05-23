@@ -49,6 +49,28 @@ function enterDeepLAPIkey(storage, translator) {
   return { status: 'error' };
 }
 
+// 2024 sidebar
+function enterAPIkey(provider, storage, apiKey) {
+  const propertyName = PROPERTY_NAMES[provider]['propertyApiKeyName'];
+  let properties;
+  apiKey = apiKey.trim();
+  if (apiKey != '') {
+    const testResult = PROPERTY_NAMES[provider]['testKey'](apiKey);
+    if (testResult.status === 'ok') {
+      if (storage == 'user') {
+        properties = PropertiesService.getUserProperties();
+      } else {
+        properties = PropertiesService.getDocumentProperties();
+      }
+      properties.setProperty(propertyName, apiKey);
+      return { status: 'ok' };
+    } else {
+      return { status: 'error', message: `The ${provider} API key doesn't work.` };
+    }
+  }
+  return { status: 'error', message: `Something went wrongt. The ${provider} API key wasn't saved.` };
+}
+
 // Checks DeepL API key
 // Requests language sources, checks response code
 function testDeeplKey(apiKey) {
@@ -110,6 +132,44 @@ function testChatGPTKey(apiKey) {
   }
 }
 
+
+function testAnthropicKey(apiKey) {
+  try {
+    const url = 'https://api.anthropic.com/v1/messages';
+    const headers = {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    const payload = {
+      "model": "claude-3-haiku-20240307",
+      "max_tokens": 1,
+      "temperature": 0,
+      "messages": [
+        { "role": "user", "content": "Do you speak English? Return Y or N." }
+      ]
+    };
+
+    const options = {
+      method: 'post',
+      headers: headers,
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const data = JSON.parse(response.getContentText());
+    if (data.error) {
+      throw new Error(`API error: ${data.error.message}`);
+    }
+
+    return { status: 'ok' };
+  }
+  catch (error) {
+    return { status: 'error', message: 'Error in testAnthropicKey ' + error };
+  }
+}
+
 // Menu item 'Remove DeepL API key for user / all documents'
 function removeDeepLAPIkeyUser() {
   removeAPIkeyUser('DeepLAPIkey');
@@ -168,6 +228,7 @@ function copyUserChatGPTApiKeyToDocument() {
   copyUserApiKeyToDocument('CHATGPT');
 }
 
+// old
 // Menu item 'Copy user API key to document'
 function copyUserApiKeyToDocument(translator) {
   const translatorName = PROPERTY_NAMES[translator]['textName'];
@@ -187,34 +248,15 @@ function copyUserApiKeyToDocument(translator) {
   onOpen();
 }
 
-// Test for getDeepLAPIkey()
-function logDeepLAPIkeyUser() {
-  const key = getDeepLAPIkey('user', 'DeepLAPIkey')
-  Logger.log(key);
+// 2024
+function copyUserApiKeyToDocStorage(translator) {
+  const translatorName = PROPERTY_NAMES[translator]['textName'];
+  const propertyName = PROPERTY_NAMES[translator]['propertyApiKeyName'];
+  let deeplApiKeyUser = getDeepLAPIkey('user', propertyName);
+  if (deeplApiKeyUser == null) {
+    return { status: 'error', message: "Error! " + translatorName + " API key for user/all documents doesn't exist. Add it." };
+  }
+  properties = PropertiesService.getDocumentProperties();
+  properties.setProperty(propertyName, deeplApiKeyUser);
+  return { status: 'ok' };
 }
-
-// Test for getDeepLAPIkey()
-function logDeepLAPIkeyDoc() {
-  const key = getDeepLAPIkey('doc', 'DeepLAPIkey')
-  Logger.log(key);
-}
-
-// Test for getDeepLAPIkey()
-function logChatGPTAPIkeyUser() {
-  const key = getDeepLAPIkey('user', 'ChatGPTAPIkey')
-  Logger.log(key);
-}
-
-// Test for getDeepLAPIkey()
-function logChatGPTAPIkeyDoc() {
-  const key = getDeepLAPIkey('doc', 'ChatGPTAPIkey')
-  Logger.log(key);
-}
-
-function testAllKeys() {
-  logDeepLAPIkeyUser();
-  logDeepLAPIkeyDoc();
-  logChatGPTAPIkeyUser();
-  logChatGPTAPIkeyDoc();
-}
-

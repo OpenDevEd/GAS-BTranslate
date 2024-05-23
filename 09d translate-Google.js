@@ -1,12 +1,17 @@
 // translateSelectionAndAppendL uses the function
 function getgtrURL(txt, origin, dest) {
-  return "https://translate.google.com/#view=home&op=translate&sl="+origin+"&tl="+dest+"&text="+ encodeURIComponent(txt);
+  return "https://translate.google.com/#view=home&op=translate&sl=" + origin + "&tl=" + dest + "&text=" + encodeURIComponent(txt);
 }
 
 // getTextAndTranslation, translateSelectionAndAppendL use the function
 function translateText(text, origin, dest) {
-  if (origin === dest) return text;
-  return LanguageApp.translate(text, origin, dest);
+  try {
+    if (origin === dest) return text;
+    return LanguageApp.translate(text, origin, dest);
+  }
+  catch (e) {
+    return e;
+  }
 }
 
 // https://developers.google.com/gsuite/add-ons/editors/docs/quickstart/translate
@@ -141,8 +146,8 @@ function getPreferences() {
 function getTextAndTranslation(origin, dest, savePrefs) {
   if (savePrefs) {
     PropertiesService.getUserProperties()
-        .setProperty('originLang', origin)
-        .setProperty('destLang', dest);
+      .setProperty('originLang', origin)
+      .setProperty('destLang', dest);
   }
   var text = getSelectedText().join('\n');
   return {
@@ -167,7 +172,7 @@ function insertText(newText) {
     var replaced = false;
     var elements = selection.getSelectedElements();
     if (elements.length === 1 && elements[0].getElement().getType() ===
-        DocumentApp.ElementType.INLINE_IMAGE) {
+      DocumentApp.ElementType.INLINE_IMAGE) {
       throw new Error('Can\'t insert text into an image.');
     }
     for (var i = 0; i < elements.length; ++i) {

@@ -1,3 +1,13 @@
+const LEGACY_OPENAI = 'GPT3.5-TURBO';
+
+const LEGACY_OPENAI_MODEL = {
+  "model": "gpt-3.5-turbo",
+  "temperature": 0.3,
+  "maxTokens": 4096,
+  "customPrompt": "Translate to <T>",
+  "name": "openAI",
+  "useDefaultPrompt": false
+};
 
 function getApiKey(translator) {
   const translatorName = PROPERTY_NAMES[translator]['textName'];
@@ -75,25 +85,42 @@ function getApiKey(translator) {
 // retrieveSlot uses the function
 function translateSelectionAndAppendL(settings) {
   try {
-    // Logger.log(settings);
+
+    const llmTranslators = extractTranslatorNamesLLM();
+
+    if (!llmTranslators.allModelsByNames.hasOwnProperty('openAI')) {
+      llmTranslators.allModelsByNames['openAI'] = LEGACY_OPENAI_MODEL;
+      llmTranslators.OpenAI.push('openAI');
+    }
+
     const deepLArray = [];
     const googleArray = [];
     const openAIArray = [];
+    const anthropicArray = [];
     let translationsArray = [];
     let translationsToInsert = [];
     for (let i in settings.targets) {
+      const keys = Object.keys(settings.targets[i]);
       if (settings.targets[i].deepL) {
         deepLArray.push({ origin: settings.source.deepL, dest: settings.targets[i].deepL, formality: settings.targets[i].form });
-      } else if (settings.targets[i].openAI) {
-        openAIArray.push({ origin: settings.source.openAI, dest: settings.targets[i].name });
-      } else {
+      } else if (settings.targets[i].google) {
         googleArray.push({ origin: settings.source.google, dest: settings.targets[i].google });
+      } else {
+        for (let j in keys) {
+          if (llmTranslators.OpenAI.includes(keys[j])) {
+            openAIArray.push({ origin: settings.source[keys[j]], dest: settings.targets[i].name, settings: llmTranslators.allModelsByNames[keys[j]] });
+          }
+          if (llmTranslators.Anthropic.includes(keys[j])) {
+            anthropicArray.push({ origin: settings.source[keys[j]], dest: settings.targets[i].name, settings: llmTranslators.allModelsByNames[keys[j]] });
+          }
+        }
       }
     }
 
     // Logger.log(deepLArray);
     // Logger.log(googleArray);
     // Logger.log(openAIArray);
+    // Logger.log(anthropicArray);
 
     // Translation settings contain DeepL
     let deepLApiKey;
@@ -113,11 +140,20 @@ function translateSelectionAndAppendL(settings) {
     }
     // End. Translation settings contain ChatGPT
 
+    // Translation settings contain Anthropic
+    let anthropicApiKey;
+    if (anthropicArray.length > 0) {
+      const anthropicKeyResult = getApiKey('Anthropic');
+      if (anthropicKeyResult.status !== 'ok') return 0;
+      anthropicApiKey = anthropicKeyResult.apiKey;
+    }
+    // End. Translation settings contain Anthropic
+
     let dLlinkText;
 
     const format = getFormatSettings(true);
     if (format.style == 'footnotes') {
-      appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chatGPTApiKey);
+      appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey);
     } else if (format.style == 'txt') {
 
       // This will use the selection or the paragraph.
@@ -150,10 +186,20 @@ function translateSelectionAndAppendL(settings) {
 
               // translate using OpenAI API and insert
               for (let j in openAIArray) {
-                var out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
-                var openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
+                var out = translateTextOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, chatGPTApiKey, openAIArray[j].settings);
+                const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
+                var openAILinkText = "《" + trName + ":" + openAIArray[j].dest + "》";
                 var openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
                 collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
+              }
+
+              // translate using Anthropic API and insert
+              for (let j in anthropicArray) {
+                var out = translateTextAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, anthropicApiKey, anthropicArray[j].settings);
+                const trName = anthropicArray[j].settings.name;
+                var anthropicLinkText = "《" + trName + ":" + anthropicArray[j].dest + "》";
+                var anthropicURL = 'https://claude.ai/chats';
+                collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL);
               }
 
               // translate using Google Translate and insert
@@ -192,8 +238,10 @@ function translateSelectionAndAppendL(settings) {
               style[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
               style[DocumentApp.Attribute.FOREGROUND_COLOR] = '#015610'; // null
               element.editAsText().insertText(0, "《translationOf: ");
-              element.editAsText().insertText(element.editAsText().getText().toString().length, "》" + boundaryEnd);
+              var elLength = element.editAsText().getText().toString().length;
+              element.editAsText().insertText(elLength, "》" + boundaryEnd);
               element.editAsText().setAttributes(0, 15, style);
+              element.editAsText().setAttributes(elLength, elLength + 1, style);
             } else {
               //Logger.log('A blank text element');
             }
@@ -214,7 +262,7 @@ function translateSelectionAndAppendL(settings) {
   }
 }
 
-function appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chatGPTApiKey) {
+function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey) {
   const doc = DocumentApp.getActiveDocument();
   const documentId = doc.getId();
 
@@ -267,12 +315,24 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chat
 
           // Translate using OpenAI API
           for (let j in openAIArray) {
-            out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
-            var openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
+            //out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
+            out = translateTextOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, chatGPTApiKey, openAIArray[j].settings);
+            //var openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
+            const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
+            var openAILinkText = "《" + trName + ":" + openAIArray[j].dest + "》";
             var openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
             collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
           }
           // End. Translate using OpenAI API
+
+          // translate using Anthropic API and insert
+          for (let j in anthropicArray) {
+            var out = translateTextAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, anthropicApiKey, anthropicArray[j].settings);
+            const trName = anthropicArray[j].settings.name;
+            var anthropicLinkText = "《" + trName + ":" + anthropicArray[j].dest + "》";
+            var anthropicURL = 'https://claude.ai/chats';
+            collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL);
+          }
 
           // rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, translationsToInsert[0], namedRanges, footnotesInfo);
 
@@ -491,6 +551,17 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, deepLApiKey, chat
           text_style: textStyle_TRANSLATION_OF,
           fields: formFieldsString(textStyle_TRANSLATION_OF)
         }
+      },
+      {
+        updateTextStyle: {
+          range: {
+            startIndex: footnoteText.length - 1,
+            endIndex: footnoteText.length,
+            segmentId: footnotesInfo[rangeName].footnoteId,
+          },
+          text_style: textStyle_TRANSLATION_OF,
+          fields: formFieldsString(textStyle_TRANSLATION_OF)
+        }
       }
     );
 
@@ -673,5 +744,7 @@ function insertTranslations(translationToInsert, parent, style, parPosition) {
   for (let l = 0; l < startEndArray.length; l++) {
     newPara.editAsText().setLinkUrl(startEndArray[l].start, startEndArray[l].end, startEndArray[l].url);
   }
+  // newPara.setLeftToRight(false);
+  // Logger.log(newPara.isLeftToRight());
   return newPara;
 }
