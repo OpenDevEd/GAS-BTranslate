@@ -99,23 +99,30 @@ function translateSelectionAndAppendL(settings) {
     const anthropicArray = [];
     let translationsArray = [];
     let translationsToInsert = [];
+    let destLang;
     for (let i in settings.targets) {
       const keys = Object.keys(settings.targets[i]);
       if (settings.targets[i].deepL) {
         deepLArray.push({ origin: settings.source.deepL, dest: settings.targets[i].deepL, formality: settings.targets[i].form });
+        destLang = settings.targets[i].deepL;
       } else if (settings.targets[i].google) {
         googleArray.push({ origin: settings.source.google, dest: settings.targets[i].google });
+        destLang = settings.targets[i].google;
       } else {
         for (let j in keys) {
           if (llmTranslators.OpenAI.includes(keys[j])) {
             openAIArray.push({ origin: settings.source[keys[j]], dest: settings.targets[i].name, settings: llmTranslators.allModelsByNames[keys[j]] });
+            destLang = settings.targets[i].name;
           }
           if (llmTranslators.Anthropic.includes(keys[j])) {
             anthropicArray.push({ origin: settings.source[keys[j]], dest: settings.targets[i].name, settings: llmTranslators.allModelsByNames[keys[j]] });
+            destLang = settings.targets[i].name;
           }
         }
       }
     }
+
+const ltrLang = checkLtr(destLang);
 
     // Logger.log(deepLArray);
     // Logger.log(googleArray);
@@ -153,7 +160,7 @@ function translateSelectionAndAppendL(settings) {
 
     const format = getFormatSettings(true);
     if (format.style == 'footnotes') {
-      appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey);
+      appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang);
     } else if (format.style == 'txt') {
 
       // This will use the selection or the paragraph.
@@ -226,7 +233,7 @@ function translateSelectionAndAppendL(settings) {
               //Logger.log(translationsToInsert);
               var style = element.editAsText().getAttributes();
               for (let m = 0; m < translationsToInsert.length; m++) {
-                insertTranslations(translationsToInsert[m], parent, style, parPosition);
+                insertTranslations(translationsToInsert[m], parent, style, parPosition, ltrLang);
               }
 
               if (i == 0) {
@@ -262,7 +269,7 @@ function translateSelectionAndAppendL(settings) {
   }
 }
 
-function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey) {
+function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang) {
   const doc = DocumentApp.getActiveDocument();
   const documentId = doc.getId();
 
@@ -337,7 +344,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
           // rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, translationsToInsert[0], namedRanges, footnotesInfo);
 
           // Inserts the main translation
-          newPara = insertTranslations(translationsToInsert[0], parent, style, parPosition);
+          newPara = insertTranslations(translationsToInsert[0], parent, style, parPosition, ltrLang);
           rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
           footnotesInfo[rangeName].elementText = elementText;
           footnotesInfo[rangeName].elementFormatting = [];
@@ -730,7 +737,7 @@ function collectTranslations(translationsArray, translationsToInsert, out, linkT
 // 1. Inserts translations and original for 'text' workflow
 // 2. Inserts the main translation for 'footnote' workflow
 // translateSelectionAndAppendL, appendFootnotes use the function
-function insertTranslations(translationToInsert, parent, style, parPosition) {
+function insertTranslations(translationToInsert, parent, style, parPosition, ltrLang) {
   translatorsLinks = '';
   startEndArray = [];
   for (let k = 0; k < translationToInsert.translators.length; k++) {
@@ -744,7 +751,14 @@ function insertTranslations(translationToInsert, parent, style, parPosition) {
   for (let l = 0; l < startEndArray.length; l++) {
     newPara.editAsText().setLinkUrl(startEndArray[l].start, startEndArray[l].end, startEndArray[l].url);
   }
-  // newPara.setLeftToRight(false);
-  // Logger.log(newPara.isLeftToRight());
+  newPara.setLeftToRight(ltrLang);
   return newPara;
+}
+
+function checkLtr(targetLang) {
+  if (['ar', 'AR', 'Arabic', 'Hebrew', 'he', 'Persian', 'fa'].includes(targetLang)) {
+    return false;
+  } else {
+    return true;
+  }
 }
