@@ -166,6 +166,8 @@ function submenu_09_translate_basic(e) {
     .addItem('spp split off selected text, then paras [select text]', 'splitOffSelectedText_thenSplitParas')
     .addItem('mps merge sentences to paragraphs [select paragraphs] stp', 'mergeParasInDocumentB')
     .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
+    .addItem('trclt delete all translated text 《...》', 'clearTranslatedText')
+    .addItem('trclm clear all translation markers 《...》', 'clearTranslationMarkers')
   );
   /* end submenu 1 */
 
@@ -294,6 +296,10 @@ function translateSelectionAndAppend61() {
 // submenu_09_translate_full (out-of-use) adds menu item 'trclear delete all translated text 《...》'
 function clearTranslatedText() {
   singleReplace("《translationOf: [^《》]*?》", "", true, false, null);
+};
+
+function clearTranslationMarkers() {
+  singleReplace("《[^《》]*?》", "", true, false, null);
 };
 
 // translateSelectionAndReplace (out-of-use) uses the function
