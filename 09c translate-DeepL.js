@@ -1,19 +1,38 @@
-//var apiKey = '';
-
-//might consider using post? https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app#fetch(String)
 // translateSelectionAndAppendL uses the function
 function translateTextDeepL(txt, from, to, formality, apiKey) {
-  var url = "https://api.deepl.com/v2/translate?auth_key=" + apiKey +
-    "&source_lang=" + from.toUpperCase() + "&target_lang=" + to.toUpperCase() + "&formality=" + formality + "&text=" + encodeURIComponent(txt);
-  var response = UrlFetchApp.fetch(url);
-  var json = response.getContentText();
-  var data = JSON.parse(json);
-  if ('translations' in data) {
-    return data.translations[0].text;
-  } else {
-    return json;
-  };
-};
+  try {
+    const url = 'https://api.deepl.com/v2/translate';
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Authorization': 'DeepL-Auth-Key ' + apiKey,
+        'Content-Type': 'application/json'
+      },
+      payload: JSON.stringify({
+        'text': [
+          txt
+        ],
+        'source_lang': from,
+        'target_lang': to,
+        'formality': formality
+      }),
+      muteHttpExceptions: false
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const json = response.getContentText();
+    const data = JSON.parse(json);
+    if ('translations' in data) {
+      return data.translations[0].text;
+    } else {
+      return json;
+    }
+  }
+  catch (e) {
+    return e;
+  }
+}
 
 // translateSelectionAndAppendL uses the function
 function getDeepLURL(txt, from, to) {
