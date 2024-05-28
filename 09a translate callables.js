@@ -166,8 +166,9 @@ function submenu_09_translate_basic(e) {
     .addItem('spp split off selected text, then paras [select text]', 'splitOffSelectedText_thenSplitParas')
     .addItem('mps merge sentences to paragraphs [select paragraphs] stp', 'mergeParasInDocumentB')
     .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
-    .addItem('trclt delete all translated text 《...》', 'clearTranslatedText')
-    .addItem('trclm clear all translation markers 《...》', 'clearTranslationMarkers')
+    //.addItem('trclt delete all translated text 《...》', 'clearTranslatedText')
+    .addItem('trclm clear all translation markers 《...》', 'leaveOriginalAndTranslation')
+    .addItem('trclmo clear all translation markers 《...》 and original text', 'leaveOnlyTranslation')
   );
   /* end submenu 1 */
 
@@ -298,8 +299,14 @@ function clearTranslatedText() {
   singleReplace("《translationOf: [^《》]*?》", "", true, false, null);
 };
 
-function clearTranslationMarkers() {
-  singleReplace("《[^《》]*?》", "", true, false, null);
+function leaveOnlyTranslation() {
+  singleReplace("《[^《》]*?》 ?", "", true, false, null);
+};
+
+function leaveOriginalAndTranslation() {
+  singleReplace("《translationOf: ?", "", true, false, null);
+  singleReplace("《[^《》]*?》 ?", "", true, false, null);
+  singleReplace("》", "", true, false, null);
 };
 
 // translateSelectionAndReplace (out-of-use) uses the function

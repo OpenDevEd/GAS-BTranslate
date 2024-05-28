@@ -122,7 +122,7 @@ function translateSelectionAndAppendL(settings) {
       }
     }
 
-const ltrLang = checkLtr(destLang);
+    const ltrLang = checkLtr(destLang);
 
     // Logger.log(deepLArray);
     // Logger.log(googleArray);
@@ -248,7 +248,7 @@ const ltrLang = checkLtr(destLang);
               var elLength = element.editAsText().getText().toString().length;
               element.editAsText().insertText(elLength, "》" + boundaryEnd);
               element.editAsText().setAttributes(0, 15, style);
-              element.editAsText().setAttributes(elLength, elLength + 1, style);
+              element.editAsText().setAttributes(elLength, elLength, style);
             } else {
               //Logger.log('A blank text element');
             }

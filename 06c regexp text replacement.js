@@ -1,9 +1,10 @@
 
-function singleReplace(re,str,isRegExp,useJS,flags) {
-  singleReplacePartial(re,str,isRegExp,useJS,flags,true,true);
+function singleReplace(re, str, isRegExp, useJS, flags) {
+  singleReplacePartial(re, str, isRegExp, useJS, flags, true, true);
 };
-  
-function singleReplacePartial(re,str,isRegExp,useJS,flags,bodyFlag,fnFlag) {
+
+function singleReplacePartial(re, str, isRegExp, useJS, flags, bodyFlag, fnFlag) {
+  let emptyFootnoteFlag = false;
   // isRegExp: Is the string passed in a regexp or a literal string?
   // useJS: 
   // Seems that the find function doesn't take a regexp, but just a string...
@@ -23,15 +24,15 @@ function singleReplacePartial(re,str,isRegExp,useJS,flags,bodyFlag,fnFlag) {
   // why this?
   // var repad = ".*?(?:"+re+").$";
   var repad = re;
-  if (flags) { 
+  if (flags) {
     regexp = new RegExp(repad, flags);
   } else {
     regexp = new RegExp(repad);
   };
   // DocumentApp.getUi().alert("Search: " + regu.toString() );
-/*
-  var bodyElement = DocumentApp.getActiveDocument().getBody();
-*/  
+  /*
+    var bodyElement = DocumentApp.getActiveDocument().getBody();
+  */
   var p;
   try {
     p = getParagraphsInBodyAndFootnotesExtended(false, bodyFlag, fnFlag);
@@ -39,7 +40,7 @@ function singleReplacePartial(re,str,isRegExp,useJS,flags,bodyFlag,fnFlag) {
     alert('Error in singleReplacePartial calling getParagraphsInBodyAndFootnotesExtended: ' + e);
   };
   if (p) {
-    for (var i=0; i < p.length; i++) {
+    for (var i = 0; i < p.length; i++) {
       var bodyElement = p[i];
       var rangeElement = bodyElement.findText(regu);
       var replacement;
@@ -50,8 +51,7 @@ function singleReplacePartial(re,str,isRegExp,useJS,flags,bodyFlag,fnFlag) {
         // work-around to be able to use JS regexp engine
         // https://stackoverflow.com/questions/30968419/replacetext-regex-not-followed-by/33528920#33528920 
         if (useJS) {
-          
-           alert("useJS not working");
+          alert("useJS not working");
           /*
                   // Determine the input text:
           var mytext =  rangeElement.getElement().getText();
@@ -75,13 +75,26 @@ function singleReplacePartial(re,str,isRegExp,useJS,flags,bodyFlag,fnFlag) {
           eat.deleteText(rangeElement.getStartOffset(),rangeElement.getEndOffsetInclusive());
           eat.insertText(rangeElement.getStartOffset(),replacement);      
           */
-          
-          alert(regexp+ "\n" + str + "\n" + thisElement.getText());
-          replacement = thisElement.getText().replace(regexp,str);
+          alert(regexp + "\n" + str + "\n" + thisElement.getText());
+          replacement = thisElement.getText().replace(regexp, str);
         } else {
           replacement = str;
         }
         thisElement = thisElement.replaceText(regu, replacement);
+
+        if (thisElement.getText().trim() === '') {
+          try {
+            const thisElementParent = bodyElement.getParent();
+            const parentType = thisElementParent.getType();
+            if (parentType === DocumentApp.ElementType.FOOTNOTE_SECTION) {
+              emptyFootnoteFlag = true;
+            }
+            bodyElement.removeFromParent();
+          }
+          catch (e) {
+            // Can't remove the last paragraph in a document section.
+          }
+        }
         //.setBackgroundColor(searchResult.getStartOffset(), searchResult.getEndOffsetInclusive(),backgroundColor);
         // search for next match
         rangeElement = bodyElement.findText(regu, rangeElement);
@@ -89,5 +102,26 @@ function singleReplacePartial(re,str,isRegExp,useJS,flags,bodyFlag,fnFlag) {
     };
   } else {
     alert("singleReplacePartial: No paragraphs found.");
-  };
-};
+  }
+
+  if (emptyFootnoteFlag) {
+    let removeFootnoteFlag;
+    const doc = DocumentApp.getActiveDocument();
+    const footnotes = doc.getFootnotes();
+    for (let i = 0; i < footnotes.length; i++) {
+      removeFootnoteFlag = true;
+      if (footnotes[i].getFootnoteContents()) {
+        const paragraphs = footnotes[i].getFootnoteContents().getParagraphs();
+        for (let j = 0; j < paragraphs.length; j++) {
+          if (paragraphs[j].getText().trim() !== '') {
+            removeFootnoteFlag = false;
+          }
+        }
+        if (removeFootnoteFlag) {
+          footnotes[i].removeFromParent();
+        }
+      }
+    }
+  }
+
+}
