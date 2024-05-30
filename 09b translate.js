@@ -251,6 +251,12 @@ function translateSelectionAndAppendL(settings) {
               element.editAsText().setAttributes(elLength, elLength, style);
             } else {
               //Logger.log('A blank text element');
+              if (i == 0) {
+                element.editAsText().insertText(0, boundaryStart);
+              }
+              if (p.length - 1 == i) {
+                element.editAsText().insertText(0, boundaryEnd);
+              }
             }
           } else {
             alert('could not edit para');
@@ -387,9 +393,15 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
           }
 
           element.removeFromParent();
-        } /* else {
-          Logger.log('A blank text element');
-        } */
+        } else {
+          //Logger.log('A blank text element');
+          if (i == 0) {
+            element.editAsText().insertText(0, '《translationSTARTS》');
+          }
+          if (p.length - 1 == i) {
+            parent.insertParagraph(parPosition + 2, '《translationENDS》');
+          }
+        }
       } else {
         alert('could not edit para');
       };
