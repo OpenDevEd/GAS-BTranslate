@@ -1,4 +1,4 @@
-function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSettings) {
+function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSettings, preserveFormatting) {
   try {
     let { temperature, maxTokens, customPrompt, useDefaultPrompt, model } = { ...modelSettings };
 
@@ -7,6 +7,11 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
     }
     let systemMessage = customPrompt.replaceAll('<T>', targetLang);
     systemMessage = systemMessage.replaceAll('<S>', sourceLang);
+
+    if (preserveFormatting) {
+      systemMessage += ' Preserve html tags.';
+    }
+
     const url = 'https://api.openai.com/v1/chat/completions';
     const options = {
       method: 'POST',

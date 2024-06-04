@@ -1,4 +1,4 @@
-function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, modelSettings) {
+function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, modelSettings, preserveFormatting) {
   try {
     let { temperature, maxTokens, customPrompt, useDefaultPrompt, model } = { ...modelSettings };
 
@@ -7,7 +7,10 @@ function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, model
     }
     let systemMessage = customPrompt.replaceAll('<T>', targetLang);
     systemMessage = systemMessage.replaceAll('<S>', sourceLang);
-
+    
+    if (preserveFormatting) {
+      systemMessage += ' Preserve html tags.';
+    }
 
     const url = 'https://api.anthropic.com/v1/messages';
     const headers = {

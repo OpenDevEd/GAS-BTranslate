@@ -1,5 +1,5 @@
 // translateSelectionAndAppendL uses the function
-function translateTextDeepL(txt, from, to, formality, apiKey) {
+function translateTextDeepL(txt, from, to, formality, apiKey, preserveFormatting) {
   try {
     const url = 'https://api.deepl.com/v2/translate';
 
@@ -19,6 +19,10 @@ function translateTextDeepL(txt, from, to, formality, apiKey) {
       }),
       muteHttpExceptions: false
     };
+
+  if (preserveFormatting === true){
+    options.payload.tag_handling = 'html';
+  }
 
     const response = UrlFetchApp.fetch(url, options);
     const json = response.getContentText();

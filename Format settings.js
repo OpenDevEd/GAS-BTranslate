@@ -4,25 +4,23 @@ function clearFormatSettings() {
   onOpen();
 }
 
-function getFormatSettings(tryToRetrieveProperties) {
-  const DEFAULT_FORMAT_STYLE = 'txt';
+function getSettings(tryToRetrieveProperties, defaultSettings, allMenuItemsObj, propertyKey) {
   const resultObj = {
     marker: '',
-    style: DEFAULT_FORMAT_STYLE,
-    menuText: formatStyles[DEFAULT_FORMAT_STYLE]['menuText']
+    style: defaultSettings,
+    menuText: allMenuItemsObj[defaultSettings]['menuText']
   };
   if (tryToRetrieveProperties === true) {
     try {
-      const userProperties = PropertiesService.getUserProperties();
-      const formatStyle = userProperties.getProperty('FORMAT_SETTINGS');
-      if (formatStyle != null && formatStyles.hasOwnProperty(formatStyle)) {
-        resultObj['style'] = formatStyle;
-        resultObj['menuText'] = formatStyles[formatStyle]['menuText'];
+      const savedSettings = PropertiesService.getUserProperties().getProperty(propertyKey);
+      if (savedSettings != null && allMenuItemsObj.hasOwnProperty(savedSettings)) {
+        resultObj['style'] = savedSettings;
+        resultObj['menuText'] = allMenuItemsObj[savedSettings]['menuText'];
       }
       resultObj['marker'] = '✅';
     }
     catch (error) {
-      Logger.log('Needs to activate!!! ' + error);
+      // Logger.log('Needs to activate!!! ' + error);
     }
   }
   return resultObj;
@@ -30,10 +28,12 @@ function getFormatSettings(tryToRetrieveProperties) {
 
 
 function activateFormatStyle(obj) {
-  // Finds key in formatStyles where value equals obj
-  const formatStyle = Object.keys(formatStyles).find(key => formatStyles[key] === obj);
-  const userProperties = PropertiesService.getUserProperties();
-  userProperties.setProperty('FORMAT_SETTINGS', formatStyle);
+  activateSettings(formatStyles, obj, 'FORMAT_SETTINGS');
+}
+
+function activateSettings(allMenuItemsObj, targetObj, propertyKey){
+  const value = Object.keys(allMenuItemsObj).find(key => allMenuItemsObj[key] === targetObj);
+  PropertiesService.getUserProperties().setProperty(propertyKey, value);
   onOpen();
 }
 

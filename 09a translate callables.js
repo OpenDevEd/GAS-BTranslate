@@ -100,12 +100,25 @@ function submenu_09_translate_basic(e) {
 
   TrMenu.addSeparator();
 
-  const activeFormatStyle = getFormatSettings(tryToRetrieveProperties);
-  let selectedStyleMarker = '';
-  for (let formatStyle in formatStyles) {
-    selectedStyleMarker = formatStyle === activeFormatStyle.style ? activeFormatStyle.marker + ' ' : '';
-    TrMenu.addItem(selectedStyleMarker + formatStyles[formatStyle].menuText, 'formatStyles.' + formatStyle + '.run');
-  }
+  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'txt', formatStyles, 'formatStyles', 'FORMAT_SETTINGS');
+
+  // const activeFormatStyle = getFormatSettings(tryToRetrieveProperties);
+  // let selectedStyleMarker = '';
+  // for (let formatStyle in formatStyles) {
+  //   selectedStyleMarker = formatStyle === activeFormatStyle.style ? activeFormatStyle.marker + ' ' : '';
+  //   TrMenu.addItem(selectedStyleMarker + formatStyles[formatStyle].menuText, 'formatStyles.' + formatStyle + '.run');
+  // }
+
+  TrMenu.addSeparator();
+
+  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'no', preserveFormattingStyles, 'preserveFormattingStyles', 'PRESERVE_FORMATTING_SETTINGS');
+
+  // const activePreserveFormattingStyle = getPreserveFormattingSettings(tryToRetrieveProperties);
+  // let selectedPreserveFormattingStyleMarker = '';
+  // for (let formatStyle in preserveFormattingStyles) {
+  //   selectedPreserveFormattingStyleMarker = formatStyle === activePreserveFormattingStyle.style ? activePreserveFormattingStyle.marker + ' ' : '';
+  //   TrMenu.addItem(selectedPreserveFormattingStyleMarker + preserveFormattingStyles[formatStyle].menuText, 'preserveFormattingStyles.' + formatStyle + '.run');
+  // }
 
   TrMenu.addSeparator();
 
@@ -176,6 +189,16 @@ function submenu_09_translate_basic(e) {
 
   return TrMenu;
 };
+
+function greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, defaultSettings, allMenuItemsObj, allMenuItemsObjName, propertyKey) {
+  const activeSettings = getSettings(tryToRetrieveProperties, defaultSettings, allMenuItemsObj, propertyKey);
+  //const activePreserveFormattingStyle = getPreserveFormattingSettings(tryToRetrieveProperties);
+  let selectedSettingsMarker = '';
+  for (let key in allMenuItemsObj) {
+    selectedSettingsMarker = key === activeSettings.style ? activeSettings.marker + ' ' : '';
+    TrMenu.addItem(selectedSettingsMarker + allMenuItemsObj[key].menuText, allMenuItemsObjName + '.' + key + '.run');
+  }
+}
 
 function chineseEnglishPortugueseVersionHelper(array, target) {
   if (array.includes(target)) {
