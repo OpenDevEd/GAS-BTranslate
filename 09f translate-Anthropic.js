@@ -1,13 +1,12 @@
 function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, modelSettings, preserveFormatting) {
   try {
     let { temperature, maxTokens, customPrompt, useDefaultPrompt, model } = { ...modelSettings };
-
     if (useDefaultPrompt === true) {
       customPrompt = settings.Anthropic.defaultPrompt;
     }
     let systemMessage = customPrompt.replaceAll('<T>', targetLang);
     systemMessage = systemMessage.replaceAll('<S>', sourceLang);
-    
+
     if (preserveFormatting) {
       systemMessage += ' Preserve html tags.';
     }
@@ -20,9 +19,9 @@ function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, model
     };
     const payload = {
       "model": model,
-      "max_tokens": maxTokens,
+      "max_tokens": Number(maxTokens),
       "system": systemMessage,
-      "temperature": temperature,
+      "temperature": Number(temperature),
       "messages": [
         { "role": "user", "content": inputText }
       ]
@@ -37,6 +36,10 @@ function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, model
 
     const response = UrlFetchApp.fetch(url, options);
     const data = JSON.parse(response.getContentText());
+
+    if (data.stop_reason === 'max_tokens') {
+      throw new Error(`The maximum number of tokens was reached.`);
+    }
 
     if (data.error) {
       throw new Error(`API error: ${data.error.message}`);

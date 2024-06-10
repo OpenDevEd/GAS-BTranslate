@@ -29,7 +29,7 @@ function getAiModels() {
   if (arrayTranslators == null) {
     arrayTranslators = setLegacyAiModels();
   }
-
+  //Logger.log(arrayTranslators);
   return arrayTranslators;
 }
 
@@ -218,22 +218,33 @@ function extractTranslatorNamesHelperLLM(data) {
 }
 
 
-function saveTranslator(provider, translator) {
+function saveTranslator(provider, translator, toDoSave) {
   if (!translator || typeof translator !== 'object') {
-    //console.error('Invalid translator object provided.');
     throw new Error('Invalid translator object provided.');
   }
   const { model, temperature, maxTokens, customPrompt, name, useDefaultPrompt } = translator;
 
   const arrayTranslators = JSON.parse(getAiModels());
-  arrayTranslators[provider].push({
-    model: model,
-    temperature: temperature,
-    maxTokens: maxTokens,
-    customPrompt: customPrompt,
-    name: name,
-    useDefaultPrompt: useDefaultPrompt
-  });
+  const translators1dArray = extractTranslatorNamesHelper(arrayTranslators);
+  if (toDoSave === true) {
+    if (translators1dArray.includes(name)) {
+      throw new Error('Name ' + name + ' already exists.');
+    }
+    arrayTranslators[provider].push({
+      model: model,
+      temperature: temperature,
+      maxTokens: maxTokens,
+      customPrompt: customPrompt,
+      name: name,
+      useDefaultPrompt: useDefaultPrompt
+    });
+  } else {
+    if (!arrayTranslators[provider]) {
+      throw new Error('Unknown provider.');
+    }
+    const index = arrayTranslators[provider].findIndex(item => item.name === name);
+    arrayTranslators[provider][index] = translator;
+  }
   setAiModels(arrayTranslators);
   const translatorNames = extractTranslatorNamesHelper(arrayTranslators);
   return { status: 'ok', arrayTranslators: arrayTranslators[provider], settings: settings[provider], translatorNames: translatorNames };

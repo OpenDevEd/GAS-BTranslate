@@ -189,6 +189,7 @@
 
 <body>
   <div id="app">
+
     <div class="legend">
       <div class="legend-item"> <span class="legend-color success-bg"></span> API key works</div>
       <div class="legend-item"> <span class="legend-color error-bg"></span> API key doesn't work</div>
@@ -262,10 +263,11 @@
         <button v-if="showTranslatorsFor !== providerName" @click="showTranslators(providerName)" :disabled="isProcessing">{{ provider.tr ? 'Add/Remove translators' : 'Cannot add translators' }}</button>
       </div>
       <div v-if="showTranslatorsFor === providerName" class="form-input">
-        <h4>Translators</h4>
+        <h4>Translators</h4> <button @click="addTranslator()" :disabled="isProcessing">Add</button>
         <div v-for="(translator, index) in arrayTranslators" :key="index" class="one-translator">
           <div>{{ translator.name }}
             <button @click="deleteTranslator(providerName, index, translator.name)" :disabled="isProcessing">Del</button>
+            <button @click="editTranslator(index, translator)" :disabled="isProcessing">Edit</button>
           </div>
           <div>Model: {{ translator.model }}</div>
           <div>Temperature: {{ translator.temperature }}</div>
@@ -276,12 +278,12 @@
 
         <div v-if="addShowDelTranslatorError === true" class="error-big">{{ addShowDelTranslatorMessage }}</div>
 
-        <h4>Add new translator</h4>
+        <h4>{{ editingTranslator ? 'Update' : 'Add new' }} translator</h4>
         <label>Translator name:</label>
-        <input v-model="newTranslator.name" maxlength="15" placeholder="Enter translator name" @input="touchedForm = true">
+        <span v-if="editingTranslator">{{ editingTranslator.name }}</span>
+        <input v-else v-model="newTranslator.name" maxlength="15" placeholder="Enter translator name" @input="touchedForm = true">
         <span v-if="!isValidName(newTranslator.name) && touchedForm" class="error">Name must consist of letters, numbers, - and _ only.</span>
-        <span v-if="touchedForm && isOneOfReserved(newTranslator.name)" class="error">Don't use {{translatorNames.join(', ')}} as translator's name.</span>
-
+        <span v-if="touchedForm && isOneOfReserved(newTranslator.name) && !editingTranslator" class="error">Don't use {{translatorNames.join(', ')}} as translator's name.</span>
 
         <div class="radio-container">
           <input type="radio" id="defaultPrompt" v-model="newTranslator.useDefaultPrompt" :value="true">
@@ -307,14 +309,14 @@
         </select>
         <span v-if="newTranslator.model === '' && touchedForm" class="error">Select a model.</span>
 
-        <label>Temperature: {{ newTranslator.temperature }}</label>
-        <input type="range" ref="temperatureSlider" v-model.number="newTranslator.temperature" :min="Settings.temperature.min" :max="Settings.temperature.max" :step="Settings.temperature.step" @input="touchedForm = true; updateSliderOnChange($event)">
+        <label>Temperature:  {{ temperature }}</label>
+        <input type="range" :min="Settings.temperature.min" :max="Settings.temperature.max" :step="Settings.temperature.step"  v-model="temperature" :style="temperatureGradientStyle">   
 
-        <label>Max Tokens: {{ newTranslator.maxTokens }}</label>
-        <input type="range" ref="maxTokensSlider" v-model.number="newTranslator.maxTokens" :min="Settings.maxTokens.min" :max="Settings.maxTokens.max" :step="Settings.maxTokens.step" @input="touchedForm = true; updateSliderOnChange($event)">
-        <span v-if="newTranslator.maxTokens === 0 && touchedForm" class="error">Max tokens cannot be 0.</span>
+        <label>Max Tokens: {{ maxTokens }}</label>
+        <input type="range" :min="Settings.maxTokens.min" :max="Settings.maxTokens.max" :step="Settings.maxTokens.step"  v-model="maxTokens" :style="tokensGradientStyle" @input="touchedForm = true">        
+        <span v-if="maxTokens === '0' && touchedForm" class="error">Max tokens cannot be 0.</span>
 
-        <button @click="saveTranslator(providerName)" :disabled="isProcessing || !canSaveTranslator()">Save</button>
+        <button @click="saveTranslator(providerName)" :disabled="isProcessing || !canSaveTranslator()">{{ editingTranslator ? 'Update' : 'Save' }}</button>
 
       </div>
     </div>
@@ -350,12 +352,31 @@
       customPrompt: '',
       defaultPrompt: ''
    },
+   maxTokens: 4000,
+   temperature:0,
    Settings: {
      arrayAllModels: ["opus", "sonnet", "haiku"],
      maxTokens: { min: 0, max: 4000, step: 1 },
      temperature: { min: 0, max: 1, step: 0.1 },
-   }
+   },
+   editingTranslator:null
  },
+   computed: {
+    temperatureGradientStyle() {
+      this.newTranslator.temperature = this.temperature;
+      const pr = this.temperature *100/this.Settings.temperature.max;
+      return {
+        '--track-gradient': `linear-gradient(to right, #E68225 0%, #E68225 ${pr}%, #ddd ${pr}%, #ddd 100%)`
+      }
+    },
+    tokensGradientStyle() {
+      this.newTranslator.maxTokens = this.maxTokens;
+      const pr = this.maxTokens *100/this.Settings.maxTokens.max;
+      return {
+        '--track-gradient': `linear-gradient(to right, #E68225 0%, #E68225 ${pr}%, #ddd ${pr}%, #ddd 100%)`
+      }
+    }
+  },
  methods: {
    getUserStorageClass(userStorage) {
      if (userStorage.added && userStorage.works) {
@@ -455,26 +476,9 @@
        [action](provider);
    },
 
-
-
     errorInfo(message){
       this.addShowDelTranslatorError = true;
       this.addShowDelTranslatorMessage = message;
-    },
-    updateSliderOnChange(event) {
-      const slider = event.target;
-      const min = slider.min || 0;
-      const max = slider.max || 100;
-      const sliderValue = slider.value;
-      this.updateSlider(slider, min, max, sliderValue);
-    },
-    updateSliderBySelector(id, min, max, sliderValue) {
-      const slider = this.$el.querySelector(`input[type="range"]:nth-of-type(${id})`);     
-      this.updateSlider(slider, min, max, sliderValue);
-    },
-    updateSlider(slider, min, max, sliderValue) {
-      const value = ((sliderValue - min) / (max - min)) * 100;
-      slider.style.setProperty('--track-gradient', `linear-gradient(to right, #E68225 0%, #E68225 ${value}%, #ddd ${value}%, #ddd 100%)`);
     },
 
    showTranslators(provider) {
@@ -490,6 +494,7 @@
          this.newTranslator.maxTokens = this.Settings.maxTokens.max;
          this.updateMaxTokens();
          this.isProcessing = false;
+         this.defaultAddTranslatorForm();
        })
        .withFailureHandler((error) => {
          this.isProcessing = false;
@@ -508,6 +513,7 @@
          if (result.status === 'ok') {
           this.arrayTranslators = result.arrayTranslators;
           this.translatorNames = result.translatorNames;
+          this.defaultAddTranslatorForm();
          } else {
            this.errorInfo(`Failed to delete translator: ${result.message}`);
          }
@@ -519,6 +525,7 @@
        .delTranslator(provider, index, translatorName);
    },
    saveTranslator(provider) {
+    const toDoSave = this.editingTranslator == null ? true : false;
     this.addShowDelTranslatorError = false;
     this.addShowDelTranslatorMessage = '';
     this.touchedForm = false;
@@ -528,25 +535,13 @@
           this.isProcessing = false;
           this.touchedForm = false;
           if (result.status === 'ok') {
-            this.arrayTranslators = result.arrayTranslators;
-            this.Settings = result.settings;
-            this.Settings.maxTokens.max = this.Settings.maxTokensForModel[0];
-            this.newTranslator = {
-              name: '',
-              model: this.Settings.arrayAllModels[0],
-              temperature: 0,
-              maxTokens: this.Settings.maxTokens.max,
-              useDefaultPrompt: true,
-              customPrompt: '',
-              defaultPrompt: ''
-            };
-
-            this.updateMaxTokens();
-
-            const min = this.Settings.temperature.min;
-            const max = this.Settings.temperature.max;
-            const sliderValue = this.newTranslator.temperature;
-            this.updateSliderBySelector(2, min, max, sliderValue);
+            if (toDoSave === false){
+              this.editingTranslator = null;
+            }
+              this.arrayTranslators = result.arrayTranslators;
+              this.translatorNames = result.translatorNames;
+              this.Settings = result.settings;
+              this.defaultAddTranslatorForm();
          } else {
            this.errorInfo(`Failed to add translator: ${result.message}`);
          }
@@ -556,7 +551,7 @@
          this.touchedForm = false;
          this.errorInfo(`Failed to add translator: ${error}`);
        })
-       .saveTranslator(provider, this.newTranslator);
+       .saveTranslator(provider, this.newTranslator, toDoSave);
    },
 
     updateMaxTokens(){
@@ -567,24 +562,20 @@
           if (oldMaxTokens > newMaxTokens){
             this.newTranslator.maxTokens = newMaxTokens;
           }
-          const min = this.Settings.maxTokens.min;
-          const max = this.Settings.maxTokens.max;
-          const sliderValue = this.newTranslator.maxTokens;
-          this.updateSliderBySelector(3, min, max, sliderValue);
     },
 
     isValidName(name) {
         return /^[a-zA-Z0-9_\-]+$/.test(name);
     },
     isOneOfReserved(name) {
-        return new RegExp('^' + this.translatorNames.join('|') + '$', 'i').test(name);
+        return new RegExp('^(' + this.translatorNames.join('|') + ')$', 'i').test(name);
     },
     isValidPrompt(prompt) {
         return /<T>/.test(prompt);
     },
     canSaveTranslator() {
         return this.isValidName(this.newTranslator.name) 
-        && !this.isOneOfReserved(this.newTranslator.name) 
+        && (this.editingTranslator || !this.isOneOfReserved(this.newTranslator.name))
         && this.newTranslator.model 
         && this.newTranslator.maxTokens > 0
         && (this.newTranslator.useDefaultPrompt || this.isValidPrompt(this.newTranslator.customPrompt));
@@ -614,6 +605,7 @@
        customPrompt: '',
        defaultPrompt: ''
      };
+     this.editingTranslator = null;
    },
 
   getUserStorageColumnName(userStorage) {
@@ -654,8 +646,45 @@
     this.isProcessing = false;
     this.message = `Failed to set default API key: ${error}`;
     this.showMessageFor = `${providerName}-${storage}`;
-  }
+  },
 
+  editTranslator(index, translator) {
+    this.editingTranslator = { ...translator }; // Create a copy of the translator object
+    this.newTranslator = { ...translator };
+    this.updateMaxTokens();
+    this.maxTokens = this.newTranslator.maxTokens,
+    this.temperature = this.newTranslator.temperature,
+    this.scrollToTranslatorForm();
+  },  
+
+  scrollToTranslatorForm() {
+    const addNewTranslatorHeader = document.querySelector('h4:last-of-type');
+    if (addNewTranslatorHeader) {
+      addNewTranslatorHeader.scrollIntoView({ behavior: 'smooth' });
+    }
+  },
+
+  addTranslator(){
+    //this.editingTranslator = null;
+    this.defaultAddTranslatorForm();
+    this.scrollToTranslatorForm();
+  },
+
+  defaultAddTranslatorForm(){
+    this.editingTranslator = null;
+    this.Settings.maxTokens.max = this.Settings.maxTokensForModel[0];
+    this.newTranslator = {
+      name: '',
+      model: this.Settings.arrayAllModels[0],
+      temperature: 0,
+      maxTokens: this.Settings.maxTokens.max,
+      useDefaultPrompt: true,
+      customPrompt: '',
+      defaultPrompt: ''
+    };
+    this.maxTokens = this.newTranslator.maxTokens;
+    this.temperature = this.newTranslator.temperature;
+  }
  }
 });
     </script>

@@ -158,7 +158,7 @@ function translateSelectionAndAppendL(settings) {
 
     let dLlinkText;
 
-    let { style: preserveFormatting } = getSettings(true, 'no', preserveFormattingStyles, 'PRESERVE_FORMATTING_SETTINGS');
+    let { style: preserveFormatting } = getSettings(true, 'yes', preserveFormattingStyles, 'PRESERVE_FORMATTING_SETTINGS');
     preserveFormatting = preserveFormatting === 'yes' ? true : false;
     const format = getSettings(true, 'txt', formatStyles, 'FORMAT_SETTINGS');
 
