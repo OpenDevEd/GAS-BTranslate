@@ -27,7 +27,7 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
           { "role": "user", "content": inputText }
         ],
         //"max_tokens": maxTokens,
-        "temperature": temperature
+        "temperature": Number(temperature)
       }),
       muteHttpExceptions: false
     };
