@@ -113,6 +113,9 @@ function submenu_09_translate_basic(e) {
 
   greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'yes', preserveFormattingStyles, 'preserveFormattingStyles', 'PRESERVE_FORMATTING_SETTINGS');
 
+  TrMenu.addSeparator();
+  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'above', aboveBelowStyles, 'aboveBelowStyles', 'ABOVE_BELOW_SETTINGS');
+
   // const activePreserveFormattingStyle = getPreserveFormattingSettings(tryToRetrieveProperties);
   // let selectedPreserveFormattingStyleMarker = '';
   // for (let formatStyle in preserveFormattingStyles) {

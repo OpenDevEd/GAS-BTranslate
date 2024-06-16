@@ -166,6 +166,34 @@ function translateSelectionAndAppendL(settings) {
       appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, preserveFormatting);
     } else if (format.style == 'txt') {
 
+      const aboveBelow = getSettings(true, 'above', aboveBelowStyles, 'ABOVE_BELOW_SETTINGS');
+
+      // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
+      const offset = aboveBelow.style === 'below' ? 1 : 0;
+
+      // This will use the selection or the paragraph.
+      let startParPos, startParent, endParent, needToInsertBoundaryStart = needToInsertBoundaryEnd = true, lastParagraphBeforeBoundaryEnd;
+
+      const boundaryStart = "《translationSTARTS》";
+      const boundaryEnd = "《translationENDS》";
+
+      const originalMarkerStart = '《translationOf: ';
+      const originalMarkerEnd = '》';
+
+      // Styles
+      const styleBoundary = {};
+      styleBoundary[DocumentApp.Attribute.BACKGROUND_COLOR] = '#000000';
+      styleBoundary[DocumentApp.Attribute.FOREGROUND_COLOR] = htmlColourNames["orange"];
+
+      const styleNull = {};
+      styleNull[DocumentApp.Attribute.BACKGROUND_COLOR] = null;
+      styleNull[DocumentApp.Attribute.FOREGROUND_COLOR] = '#000000';
+
+      const styleTranslationOf = {};
+      styleTranslationOf[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
+      styleTranslationOf[DocumentApp.Attribute.FOREGROUND_COLOR] = '#015610';
+      // End. Styles
+
       // This will use the selection or the paragraph.
       const p = getParagraphs(true);
       if (p) {
@@ -174,14 +202,6 @@ function translateSelectionAndAppendL(settings) {
           translationsToInsert = [];
 
           const element = p[i];
-          let boundaryStart = "";
-          let boundaryEnd = "";
-          if (i == 0) {
-            boundaryStart = "《translationSTARTS》";
-          };
-          if (i == p.length - 1) {
-            boundaryEnd = "《translationENDS》";
-          };
           if (element.editAsText()) {
             let elementText = element.asText().getText();
             const elementTextWithoutHtml = elementText;
@@ -195,8 +215,13 @@ function translateSelectionAndAppendL(settings) {
 
 
               const parent = element.getParent();
-              const offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
-              const parPosition = parent.getChildIndex(element) + offset;
+              const originalParagraphPosition = parent.getChildIndex(element);
+              const parPosition = originalParagraphPosition + offset;
+              if (i == 0) {
+                startParPos = originalParagraphPosition;
+                startParent = parent;
+                //newPara = parent.insertParagraph(parPosition, boundaryStart);
+              }
 
               // Logger.log(deepLArray);
               // Logger.log(googleArray);
@@ -243,36 +268,57 @@ function translateSelectionAndAppendL(settings) {
               //Logger.log(translationsToInsert);
               const style = element.editAsText().getAttributes();
               for (let m = 0; m < translationsToInsert.length; m++) {
-                insertTranslations(translationsToInsert[m], parent, style, parPosition, ltrLang, preserveFormatting);
+                const newPara = insertTranslations(translationsToInsert[m], parent, style, parPosition, ltrLang, preserveFormatting);
+                // Last paragraph before boundaryEnd (new paragraphs at the top)
+                if (offset === 1 && m === 0) {
+                  lastParagraphBeforeBoundaryEnd = newPara;
+                }
+                // End. Last paragraph before boundaryEnd (new paragraphs at the top)
               }
 
-              if (i == 0) {
-                newPara = parent.insertParagraph(parPosition, boundaryStart);
-              }
-
-              // Give the source paragraph a different colour:
-              const styleTranslationOf = {};
-              styleTranslationOf[DocumentApp.Attribute.BACKGROUND_COLOR] = '#EFEFEF';
-              styleTranslationOf[DocumentApp.Attribute.FOREGROUND_COLOR] = '#015610';
-              element.editAsText().insertText(0, "《translationOf: ");
+              // Insert source paragraph markers
+              element.editAsText().insertText(0, originalMarkerStart);
               const elLength = element.editAsText().getText().toString().length;
-              element.editAsText().insertText(elLength, "》" + boundaryEnd);
-              element.editAsText().setAttributes(0, 15, styleTranslationOf);
+              element.editAsText().insertText(elLength, originalMarkerEnd);
+              element.editAsText().setAttributes(0, originalMarkerStart.length - 1, styleTranslationOf);
               element.editAsText().setAttributes(elLength, elLength, styleTranslationOf);
+              // End. Insert source paragraph markers
+
+              // Last paragraph before boundaryEnd (new paragraphs at the bottom)
+              if (p.length - 1 == i) {
+                endParent = parent;
+                if (offset === 0) {
+                  lastParagraphBeforeBoundaryEnd = element;
+                }
+              }
+              // End. Last paragraph before boundaryEnd  (new paragraphs at the bottom)
             } else {
-              //Logger.log('A blank text element');
+              // Blank text element
               if (i == 0) {
-                element.editAsText().insertText(0, boundaryStart);
+                element.editAsText().insertText(0, boundaryStart).setAttributes(styleBoundary);
+                needToInsertBoundaryStart = false;
               }
               if (p.length - 1 == i) {
-                element.editAsText().insertText(0, boundaryEnd);
+                element.editAsText().insertText(0, boundaryEnd).setAttributes(styleBoundary)
+                  .appendText(' ').setAttributes(styleNull);
+                needToInsertBoundaryEnd = false;
               }
+              // End. Blank text element
             }
           } else {
             alert('could not edit para');
           };
         };
-        highlightTranslationStartEnd();
+        // Insert boundaryStart, boundaryEnd
+        if (needToInsertBoundaryStart) {
+          startParent.insertParagraph(startParPos, boundaryStart).setAttributes(styleBoundary);
+        }
+        if (needToInsertBoundaryEnd) {
+          const endParPos = endParent.getChildIndex(lastParagraphBeforeBoundaryEnd) + 1;
+          endParent.insertParagraph(endParPos, boundaryEnd).setAttributes(styleBoundary)
+            .appendText(' ').setAttributes(styleNull);
+        }
+        // End. Insert boundaryStart, boundaryEnd
       } else {
         alert('could not get para');
       };
