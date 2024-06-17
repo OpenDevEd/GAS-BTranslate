@@ -160,7 +160,12 @@ function translateSelectionAndAppendL(settings) {
 
     let { style: preserveFormatting } = getSettings(true, 'yes', preserveFormattingStyles, 'PRESERVE_FORMATTING_SETTINGS');
     preserveFormatting = preserveFormatting === 'yes' ? true : false;
+
     const format = getSettings(true, 'txt', formatStyles, 'FORMAT_SETTINGS');
+
+
+    let { style: appendReverseTranslation } = getSettings(true, 'yes', reverseTranslationStyles, 'REVERSE_TRANSLATION_SETTINGS');
+    appendReverseTranslation = appendReverseTranslation === 'yes' ? true : false;
 
     if (format.style == 'footnotes') {
       appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, preserveFormatting);
@@ -198,6 +203,7 @@ function translateSelectionAndAppendL(settings) {
       const p = getParagraphs(true);
       if (p) {
         for (let i = 0; i < p.length; i++) {
+          let reverseTranslationFlag = false;
           translationsArray = [];
           translationsToInsert = [];
 
@@ -228,41 +234,102 @@ function translateSelectionAndAppendL(settings) {
 
               // translate using OpenAI API and insert
               for (let j in openAIArray) {
-                const out = translateTextOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, chatGPTApiKey, openAIArray[j].settings, preserveFormatting);
-                const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
-                const openAILinkText = "《" + trName + ":" + openAIArray[j].dest + "》";
-                const openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
-                collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
+                //Logger.log('%s %s %s', elementText, openAIArray[j].origin, openAIArray[j].dest);
+                function localOpenAI(elementText, origin, dest, reverseTranslated) {
+                  let reverseTranslatedMark = '';
+                  let out = translateTextOpenAI(elementText, origin, dest, chatGPTApiKey, openAIArray[j].settings, preserveFormatting);
+                  if (reverseTranslated === true) {
+                    out = `《${out}》`;
+                    reverseTranslatedMark = ' reverse-translated';
+                  }
+                  const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
+                  const openAILinkText = "《" + trName + ":" + dest + reverseTranslatedMark + "》";
+                  const openAIURL = 'https://chat.openai.com/';
+                  collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL, reverseTranslated);
+                  return out;
+                }
+                const out = localOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, false);
+                if (appendReverseTranslation === true && reverseTranslationFlag === false) {
+                  localOpenAI(out, openAIArray[j].dest, openAIArray[j].origin, true);
+                  reverseTranslationFlag = true;
+                }
               }
 
               // translate using Anthropic API and insert
               for (let j in anthropicArray) {
-                const out = translateTextAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, anthropicApiKey, anthropicArray[j].settings, preserveFormatting);
-                const trName = anthropicArray[j].settings.name;
-                const anthropicLinkText = "《" + trName + ":" + anthropicArray[j].dest + "》";
-                const anthropicURL = 'https://claude.ai/chats';
-                collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL);
+                //Logger.log('%s %s %s', elementText, anthropicArray[j].origin, anthropicArray[j].dest);
+                function localAnthropic(elementText, origin, dest, reverseTranslated) {
+                  let reverseTranslatedMark = '';
+                  let out = translateTextAnthropic(elementText, origin, dest, anthropicApiKey, anthropicArray[j].settings, preserveFormatting);
+                  if (reverseTranslated === true) {
+                    out = `《${out}》`;
+                    reverseTranslatedMark = ' reverse-translated';
+                  }
+                  const trName = anthropicArray[j].settings.name;
+                  const anthropicLinkText = "《" + trName + ":" + dest + reverseTranslatedMark + "》";
+                  const anthropicURL = 'https://claude.ai/chats';
+                  collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL, reverseTranslated);
+                  return out;
+                }
+                const out = localAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, false);
+                if (appendReverseTranslation === true && reverseTranslationFlag === false) {
+                  localAnthropic(out, anthropicArray[j].dest, anthropicArray[j].origin, true);
+                  reverseTranslationFlag = true;
+                }
               }
 
               // translate using Google Translate and insert
               for (let j in googleArray) {
-                out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
-                const glinkText = "《G:" + googleArray[j].dest + "》";
-                const gtrURL = getgtrURL(elementTextWithoutHtml, googleArray[j].origin, googleArray[j].dest);
-                collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL);
+                function localGoogle(elementText, origin, dest, reverseTranslated, elementTextWithoutHtml) {
+                  //Logger.log('%s %s %s %s %s', elementText, origin, dest, reverseTranslated, elementTextWithoutHtml);
+                  let reverseTranslatedMark = '';
+                  let out = translateText(elementText, origin, dest);
+                  if (reverseTranslated === true) {
+                    out = `《${out}》`;
+                    reverseTranslatedMark = ' reverse-translated';
+                  }
+                  const glinkText = "《G:" + dest + reverseTranslatedMark + "》";
+                  const gtrURL = getgtrURL(elementTextWithoutHtml, origin, dest);
+                  collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL, reverseTranslated);
+                  return out;
+                }
+                const out = localGoogle(elementText, googleArray[j].origin, googleArray[j].dest, false, elementTextWithoutHtml);
+                if (appendReverseTranslation === true && reverseTranslationFlag === false) {
+                  const cleanedString = out.replace(/<\/?[^>]+(>|$)/g, "");
+                  localGoogle(out, googleArray[j].dest, googleArray[j].origin, true, cleanedString);
+                  reverseTranslationFlag = true;
+                }
               }
 
               // translate using DeepL and insert    
               for (let j = 0; j < deepLArray.length; j++) {
-                out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, deepLApiKey, preserveFormatting);
-                if (deepLArray[j].formality == 'default') {
-                  formality = '';
-                } else {
-                  formality = deepLArray[j].formality == 'less' ? ' informal' : ' formal';
+                function localDeepL(elementText, origin, dest, formality, reverseTranslated, elementTextWithoutHtml) {
+                  let reverseTranslatedMark = '';
+                  let out = translateTextDeepL(elementText, origin, dest, formality, deepLApiKey, preserveFormatting);
+                  if (reverseTranslated === true) {
+                    out = `《${out}》`;
+                    reverseTranslatedMark = ' reverse-translated';
+                  }
+                  if (formality == 'default') {
+                    formality = '';
+                  } else {
+                    formality = formality == 'less' ? ' informal' : ' formal';
+                  }
+                  dLlinkText = "《D:" + dest + formality + reverseTranslatedMark + "》";
+                  const DeepLURL = getDeepLURL(elementTextWithoutHtml, origin, dest);
+                  collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL, reverseTranslated);
+                  return out;
                 }
-                dLlinkText = "《D:" + deepLArray[j].dest + formality + "》";
-                const DeepLURL = getDeepLURL(elementTextWithoutHtml, deepLArray[j].origin, deepLArray[j].dest);
-                collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL);
+                const out = localDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, false, elementTextWithoutHtml);
+                if (appendReverseTranslation === true && reverseTranslationFlag === false) {
+                  const cleanedString = out.replace(/<\/?[^>]+(>|$)/g, "");
+                  let reverseTranslationOrig = deepLArray[j].dest;
+                  if (['PT-BR', 'PT-PT'].includes(deepLArray[j].dest)) {
+                    reverseTranslationOrig = 'PT';
+                  }
+                  localDeepL(out, reverseTranslationOrig, deepLArray[j].origin, 'default', true, cleanedString);
+                  reverseTranslationFlag = true;
+                }
               }
 
               //Logger.log(translationsToInsert);
@@ -852,12 +919,18 @@ function markFootnotePlace(doc, newPara, namedRanges, footnotesInfo) {
 
 // Detects identical translations
 // appendFootnotes, translateSelectionAndAppendL use the function
-function collectTranslations(translationsArray, translationsToInsert, out, linkText, url) {
+function collectTranslations(translationsArray, translationsToInsert, out, linkText, url, reverseTranslated) {
   const index = translationsArray.indexOf(out);
   if (index == -1) {
     //Logger.log('New: ' + out + ' ' + linkText + ' ' + JSON.stringify(translationsArray));
-    translationsArray.push(out);
-    translationsToInsert.push({ out: out, translators: [{ linkText: linkText, url: url }] });
+    const objectToInsert = { out: out, translators: [{ linkText: linkText, url: url }] };
+    if (reverseTranslated === true) {
+      translationsArray.unshift(out);
+      translationsToInsert.unshift(objectToInsert);
+    } else {
+      translationsArray.push(out);
+      translationsToInsert.push(objectToInsert);
+    }
   } else {
     //Logger.log('Already added: index = ' + index + ' ' + out + ' ' + linkText + ' ' + JSON.stringify(translationsArray));
     translationsToInsert[index].translators.unshift({ linkText: linkText, url: url });

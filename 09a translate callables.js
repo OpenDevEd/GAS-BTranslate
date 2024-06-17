@@ -110,11 +110,13 @@ function submenu_09_translate_basic(e) {
   // }
 
   TrMenu.addSeparator();
-
   greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'yes', preserveFormattingStyles, 'preserveFormattingStyles', 'PRESERVE_FORMATTING_SETTINGS');
 
   TrMenu.addSeparator();
   greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'above', aboveBelowStyles, 'aboveBelowStyles', 'ABOVE_BELOW_SETTINGS');
+
+  TrMenu.addSeparator();
+  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'yes', reverseTranslationStyles, 'reverseTranslationStyles', 'REVERSE_TRANSLATION_SETTINGS');
 
   // const activePreserveFormattingStyle = getPreserveFormattingSettings(tryToRetrieveProperties);
   // let selectedPreserveFormattingStyleMarker = '';

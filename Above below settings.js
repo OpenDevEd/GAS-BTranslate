@@ -11,7 +11,6 @@ function activateAboveBelowSettings(obj) {
   activateSettings(aboveBelowStyles, obj, 'ABOVE_BELOW_SETTINGS');
 }
 
-// Menu items of preserve formatting settings
 const aboveBelowStyles = {
   "above": {
     "menuText": "Translation above selected text",
