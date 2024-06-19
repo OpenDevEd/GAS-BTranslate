@@ -329,12 +329,14 @@ function clearTranslatedText() {
 
 function leaveOnlyTranslation() {
   singleReplace("《[^《》]*?》 ?", "", true, false, null);
+  singleReplace("《.*?reverse-translated: ", "", true, false, null);
 };
 
 function leaveOriginalAndTranslation() {
   singleReplace("《translationOf: ?", "", true, false, null);
   singleReplace("《[^《》]*?》 ?", "", true, false, null);
   singleReplace("》", "", true, false, null);
+  singleReplace("《.*?reverse-translated: ", "", true, false, null);
 };
 
 // translateSelectionAndReplace (out-of-use) uses the function

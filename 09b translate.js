@@ -156,8 +156,6 @@ function translateSelectionAndAppendL(settings) {
     }
     // End. Translation settings contain Anthropic
 
-    let dLlinkText;
-
     let { style: preserveFormatting } = getSettings(true, 'yes', preserveFormattingStyles, 'PRESERVE_FORMATTING_SETTINGS');
     preserveFormatting = preserveFormatting === 'yes' ? true : false;
 
@@ -237,13 +235,15 @@ function translateSelectionAndAppendL(settings) {
                 //Logger.log('%s %s %s', elementText, openAIArray[j].origin, openAIArray[j].dest);
                 function localOpenAI(elementText, origin, dest, reverseTranslated) {
                   let reverseTranslatedMark = '';
+                  let lastSymbolLinkText = '》';
                   let out = translateTextOpenAI(elementText, origin, dest, chatGPTApiKey, openAIArray[j].settings, preserveFormatting);
                   if (reverseTranslated === true) {
-                    out = `《${out}》`;
+                    out += '》';
                     reverseTranslatedMark = ' reverse-translated';
+                    lastSymbolLinkText = ':';
                   }
                   const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
-                  const openAILinkText = "《" + trName + ":" + dest + reverseTranslatedMark + "》";
+                  const openAILinkText = '《' + trName + ":" + dest + reverseTranslatedMark + lastSymbolLinkText;
                   const openAIURL = 'https://chat.openai.com/';
                   collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL, reverseTranslated);
                   return out;
@@ -251,7 +251,6 @@ function translateSelectionAndAppendL(settings) {
                 const out = localOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, false);
                 if (appendReverseTranslation === true && reverseTranslationFlag === false) {
                   localOpenAI(out, openAIArray[j].dest, openAIArray[j].origin, true);
-                  reverseTranslationFlag = true;
                 }
               }
 
@@ -260,13 +259,15 @@ function translateSelectionAndAppendL(settings) {
                 //Logger.log('%s %s %s', elementText, anthropicArray[j].origin, anthropicArray[j].dest);
                 function localAnthropic(elementText, origin, dest, reverseTranslated) {
                   let reverseTranslatedMark = '';
+                  let lastSymbolLinkText = '》';
                   let out = translateTextAnthropic(elementText, origin, dest, anthropicApiKey, anthropicArray[j].settings, preserveFormatting);
                   if (reverseTranslated === true) {
-                    out = `《${out}》`;
+                    out += '》';
                     reverseTranslatedMark = ' reverse-translated';
+                    lastSymbolLinkText = ':';
                   }
                   const trName = anthropicArray[j].settings.name;
-                  const anthropicLinkText = "《" + trName + ":" + dest + reverseTranslatedMark + "》";
+                  const anthropicLinkText = "《" + trName + ":" + dest + reverseTranslatedMark + lastSymbolLinkText;
                   const anthropicURL = 'https://claude.ai/chats';
                   collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL, reverseTranslated);
                   return out;
@@ -274,7 +275,6 @@ function translateSelectionAndAppendL(settings) {
                 const out = localAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, false);
                 if (appendReverseTranslation === true && reverseTranslationFlag === false) {
                   localAnthropic(out, anthropicArray[j].dest, anthropicArray[j].origin, true);
-                  reverseTranslationFlag = true;
                 }
               }
 
@@ -283,12 +283,14 @@ function translateSelectionAndAppendL(settings) {
                 function localGoogle(elementText, origin, dest, reverseTranslated, elementTextWithoutHtml) {
                   //Logger.log('%s %s %s %s %s', elementText, origin, dest, reverseTranslated, elementTextWithoutHtml);
                   let reverseTranslatedMark = '';
+                  let lastSymbolLinkText = '》';
                   let out = translateText(elementText, origin, dest);
                   if (reverseTranslated === true) {
-                    out = `《${out}》`;
+                    out += '》';
                     reverseTranslatedMark = ' reverse-translated';
+                    lastSymbolLinkText = ':';
                   }
-                  const glinkText = "《G:" + dest + reverseTranslatedMark + "》";
+                  const glinkText = "《G:" + dest + reverseTranslatedMark + lastSymbolLinkText;
                   const gtrURL = getgtrURL(elementTextWithoutHtml, origin, dest);
                   collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL, reverseTranslated);
                   return out;
@@ -297,7 +299,6 @@ function translateSelectionAndAppendL(settings) {
                 if (appendReverseTranslation === true && reverseTranslationFlag === false) {
                   const cleanedString = out.replace(/<\/?[^>]+(>|$)/g, "");
                   localGoogle(out, googleArray[j].dest, googleArray[j].origin, true, cleanedString);
-                  reverseTranslationFlag = true;
                 }
               }
 
@@ -305,17 +306,19 @@ function translateSelectionAndAppendL(settings) {
               for (let j = 0; j < deepLArray.length; j++) {
                 function localDeepL(elementText, origin, dest, formality, reverseTranslated, elementTextWithoutHtml) {
                   let reverseTranslatedMark = '';
+                  let lastSymbolLinkText = '》';
                   let out = translateTextDeepL(elementText, origin, dest, formality, deepLApiKey, preserveFormatting);
                   if (reverseTranslated === true) {
-                    out = `《${out}》`;
+                    out += '》';
                     reverseTranslatedMark = ' reverse-translated';
+                    lastSymbolLinkText = ':';
                   }
                   if (formality == 'default') {
                     formality = '';
                   } else {
                     formality = formality == 'less' ? ' informal' : ' formal';
                   }
-                  dLlinkText = "《D:" + dest + formality + reverseTranslatedMark + "》";
+                  const dLlinkText = '《D:' + dest + formality + reverseTranslatedMark + lastSymbolLinkText;
                   const DeepLURL = getDeepLURL(elementTextWithoutHtml, origin, dest);
                   collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL, reverseTranslated);
                   return out;
@@ -328,7 +331,6 @@ function translateSelectionAndAppendL(settings) {
                     reverseTranslationOrig = 'PT';
                   }
                   localDeepL(out, reverseTranslationOrig, deepLArray[j].origin, 'default', true, cleanedString);
-                  reverseTranslationFlag = true;
                 }
               }
 
@@ -925,8 +927,10 @@ function collectTranslations(translationsArray, translationsToInsert, out, linkT
     //Logger.log('New: ' + out + ' ' + linkText + ' ' + JSON.stringify(translationsArray));
     const objectToInsert = { out: out, translators: [{ linkText: linkText, url: url }] };
     if (reverseTranslated === true) {
-      translationsArray.unshift(out);
-      translationsToInsert.unshift(objectToInsert);
+      // translationsArray.unshift(out);
+      // translationsToInsert.unshift(objectToInsert);
+      translationsArray.splice(translationsArray.length - 1, 0, out);
+      translationsToInsert.splice(translationsToInsert.length - 1, 0, objectToInsert);
     } else {
       translationsArray.push(out);
       translationsToInsert.push(objectToInsert);
