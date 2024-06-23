@@ -88,12 +88,12 @@ function submenu_09_translate_basic(e) {
     }
 
     if (j == 1) {
-      TrMenu.addItem('Add translation settings', 'showTranslationSettingsDialog')
+      TrMenu.addItem('Add translation settings', 'translationSettingsSidebar')
     }
   }
 
   TrMenu.addSeparator()
-    .addItem('Translation settings', 'showTranslationSettingsDialog')
+    .addItem('Translation settings', 'translationSettingsSidebar')
     .addItem('Clear translation settings', 'clearTranslationSettings')
     .addItem('Example settings: Google', 'exampleTranslationSettingsGoogle')
     .addItem('Example settings: DeepL', 'exampleTranslationSettingsDeepL');
@@ -360,4 +360,15 @@ function getTextAndTranslation(origin, dest, savePrefs) {
     text: text,
     translation: translateText(text, origin, dest)
   };
+}
+
+function translationSettingsSidebar() {
+  const translationSettings = getTranslationSettings();
+  if (translationSettings.hasOwnProperty('menuOrder')) {
+    if (translationSettings.menuOrder.length >= 30) {
+      alert('You\'ve already added 30 translation settings.');
+      return 0;
+    }
+  }
+  universalSidebar('New translation settings', 'bTranslate: Translation settings');
 }

@@ -329,6 +329,8 @@ function translateSelectionAndAppendL(settings) {
                   let reverseTranslationOrig = deepLArray[j].dest;
                   if (['PT-BR', 'PT-PT'].includes(deepLArray[j].dest)) {
                     reverseTranslationOrig = 'PT';
+                  }else if (['EN-GB', 'EN-US'].includes(deepLArray[j].dest)) {
+                    reverseTranslationOrig = 'EN';
                   }
                   localDeepL(out, reverseTranslationOrig, deepLArray[j].origin, 'default', true, cleanedString);
                 }

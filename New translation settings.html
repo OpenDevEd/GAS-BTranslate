@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue.js Google Add-on Sidebar</title>
+  <!-- Include Vue.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Ubuntu&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Ubuntu', sans-serif;
+      color: #333333;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #app {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content {
+      flex: 1;
+      margin-left: 10px;
+    }
+
+    #submitButton {
+      padding: 3px;
+      width: calc(100% - 12px);
+      margin-top: 10px;
+    }
+
+    h4 {
+      margin: 3px 0 3px 0;
+    }
+
+    .combo-select {
+      position: relative;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .combo-select input {
+      width: calc(100% - 12px);
+      padding: 5px;
+    }
+
+    .combo-select ul {
+      position: absolute;
+      width: calc(100% - 12px);
+      max-height: 200px;
+      overflow-y: auto;
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      border: 1px solid #ccc;
+      background-color: white;
+      z-index: 1000;
+    }
+
+    .combo-select li {
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    .combo-select li:hover {
+      background-color: #f0f0f0;
+    }
+
+    .translators {
+      margin-bottom: 10px;
+    }
+
+    .translators input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1px solid #E68225;;
+      border-radius: 1px;
+      outline: none;
+      cursor: pointer;
+      vertical-align: middle;
+      position: relative;
+      margin: 2px 0;
+    }
+
+    .translators input[type="checkbox"]:checked {
+      background-color: #E68225;
+    }
+
+    .translators input[type="checkbox"]:checked::after {
+      content: '\2713';
+      font-size: 14px;
+      color: white;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .translators label {
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      /*background-color: #0F0E17;*/
+      padding: 10px;
+      /* position: sticky;*/
+      bottom: 0;
+    }
+
+    .footer-link {
+      color: #0F0E17;
+      text-decoration: none;
+      font-size: 14px;
+      margin: 5px 0;
+      transition: color 0.3s ease;
+    }
+
+    .footer-link:hover {
+      color: #E68225;
+    }
+
+    .footer-link {
+      width: 48%;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline-color: #000000;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="content">
+      <form id="languageSelectionForm" @submit.prevent="handleFormSubmit">
+        <div class="form-group" id="form-group" style="padding-top: 10px;">
+          <!-- Source language combo select -->
+          <label for="sourceLanguage">Source language:</label>
+          <combo-select :options="sourceOptions" v-model="selectedSource" @input="updateTranslators"
+            @focus="clearMessages"></combo-select>
+
+          <!-- Target language combo select -->
+          <label for="targetLanguage">Target language:</label>
+          <combo-select :options="targetOptions" v-model="selectedTarget" @input="updateTranslators"
+            @focus="clearMessages"></combo-select>
+
+
+          <!-- Translator checkboxes -->
+          <div v-if="translators.length > 0" class="translators">
+            <h4>Select translator</h4>
+            <div v-for="translator in translators" :key="translator.value">
+              <label>
+            <input type="checkbox" :value="translator.value" v-model="selectedTranslators" name="allTranslators">
+            {{ translator.label }}
+        </label>
+            </div>
+          </div>
+
+
+          <!-- Error message -->
+          <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
+
+          <!-- Success message -->
+          <p v-if="successMessage" style="color: green;">{{ successMessage }}</p>
+        </div>
+
+        <!-- Save button -->
+        <div class="form-group right">
+          <input type="submit" value="Save" id="submitButton" :disabled="!isFormValid || isExecuting">
+        </div>
+      </form>
+    </div>
+
+    <div class="footer-links">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Report+an+issue" class="footer-link" target="_blank" ref="reportIssueLink">Report an issue</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Suggest+a+feature" class="footer-link" target="_blank">Suggest a feature</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Leave+feedback" class="footer-link" target="_blank">Leave feedback</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Ask+a+question" class="footer-link" target="_blank">Ask a question</a>
+    </div>
+  </div>
+
+  <script>
+    const LEGACY_OPENAI = 'GPT3.5-TURBO';
+    const SOURCES = { "Afrikaans": { "google": "af" }, "Albanian": { "google": "sq" }, "Amharic": { "google": "am" }, "Arabic": { "deepL": "AR", "google": "ar" }, "Armenian": { "google": "hy" }, "Assamese": { "google": "as" }, "Aymara": { "google": "ay" }, "Azerbaijani": { "google": "az" }, "Bambara": { "google": "bm" }, "Basque": { "google": "eu" }, "Belarusian": { "google": "be" }, "Bengali": { "google": "bn" }, "Bhojpuri": { "google": "bho" }, "Bosnian": { "google": "bs" }, "Bulgarian": { "deepL": "BG", "google": "bg" }, "Catalan": { "google": "ca" }, "Cebuano": { "google": "ceb" }, "Chinese": { "deepL": "ZH", "google": "zh" }, "Chinese (Simplified)": { "google": "zh-CN" }, "Chinese (Traditional)": { "google": "zh-TW" }, "Corsican": { "google": "co" }, "Croatian": { "google": "hr" }, "Czech": { "deepL": "CS", "google": "cs" }, "Danish": { "deepL": "DA", "google": "da" }, "Dhivehi": { "google": "dv" }, "Dogri": { "google": "doi" }, "Dutch": { "deepL": "NL", "google": "nl" }, "English": { "deepL": "EN", "google": "en" }, "Esperanto": { "google": "eo" }, "Estonian": { "deepL": "ET", "google": "et" }, "Ewe": { "google": "ee" }, "Finnish": { "deepL": "FI", "google": "fi" }, "French": { "deepL": "FR", "google": "fr" }, "Frisian": { "google": "fy" }, "Galician": { "google": "gl" }, "Georgian": { "google": "ka" }, "German": { "deepL": "DE", "google": "de" }, "Greek": { "deepL": "EL", "google": "el" }, "Guarani": { "google": "gn" }, "Gujarati": { "google": "gu" }, "Haitian Creole": { "google": "ht" }, "Hausa": { "google": "ha" }, "Hawaiian": { "google": "haw" }, "Hebrew": { "google": "he" }, "Hindi": { "google": "hi" }, "Hmong": { "google": "hmn" }, "Hungarian": { "deepL": "HU", "google": "hu" }, "Icelandic": { "google": "is" }, "Igbo": { "google": "ig" }, "Ilocano": { "google": "ilo" }, "Indonesian": { "deepL": "ID", "google": "id" }, "Irish": { "google": "ga" }, "Italian": { "deepL": "IT", "google": "it" }, "Japanese": { "deepL": "JA", "google": "ja" }, "Javanese": { "google": "jv" }, "Kannada": { "google": "kn" }, "Kazakh": { "google": "kk" }, "Khmer": { "google": "km" }, "Kinyarwanda": { "google": "rw" }, "Konkani": { "google": "gom" }, "Korean": { "google": "ko" }, "Krio": { "google": "kri" }, "Kurdish": { "google": "ku" }, "Kurdish (Sorani)": { "google": "ckb" }, "Kyrgyz": { "google": "ky" }, "Lao": { "google": "lo" }, "Latin": { "google": "la" }, "Latvian": { "deepL": "LV", "google": "lv" }, "Lingala": { "google": "ln" }, "Lithuanian": { "deepL": "LT", "google": "lt" }, "Luganda": { "google": "lg" }, "Luxembourgish": { "google": "lb" }, "Macedonian": { "google": "mk" }, "Maithili": { "google": "mai" }, "Malagasy": { "google": "mg" }, "Malay": { "google": "ms" }, "Malayalam": { "google": "ml" }, "Maltese": { "google": "mt" }, "Maori": { "google": "mi" }, "Marathi": { "google": "mr" }, "Meiteilon (Manipuri)": { "google": "mni-Mtei" }, "Mizo": { "google": "lus" }, "Mongolian": { "google": "mn" }, "Myanmar (Burmese)": { "google": "my" }, "Nepali": { "google": "ne" }, "Norwegian": { "google": "no" }, "Nyanja (Chichewa)": { "google": "ny" }, "Odia (Oriya)": { "google": "or" }, "Oromo": { "google": "om" }, "Pashto": { "google": "ps" }, "Persian": { "google": "fa" }, "Polish": { "deepL": "PL", "google": "pl" }, "Portuguese": { "deepL": "PT" }, "Portuguese (Portugal, Brazil)": { "google": "pt" }, "Punjabi": { "google": "pa" }, "Quechua": { "google": "qu" }, "Romanian": { "deepL": "RO", "google": "ro" }, "Russian": { "deepL": "RU", "google": "ru" }, "Samoan": { "google": "sm" }, "Sanskrit": { "google": "sa" }, "Scots Gaelic": { "google": "gd" }, "Sepedi": { "google": "nso" }, "Serbian": { "google": "sr" }, "Sesotho": { "google": "st" }, "Shona": { "google": "sn" }, "Sindhi": { "google": "sd" }, "Sinhala (Sinhalese)": { "google": "si" }, "Slovak": { "deepL": "SK", "google": "sk" }, "Slovenian": { "deepL": "SL", "google": "sl" }, "Somali": { "google": "so" }, "Spanish": { "deepL": "ES", "google": "es" }, "Sundanese": { "google": "su" }, "Swahili": { "google": "sw" }, "Swedish": { "deepL": "SV", "google": "sv" }, "Tagalog (Filipino)": { "google": "tl" }, "Tajik": { "google": "tg" }, "Tamil": { "google": "ta" }, "Tatar": { "google": "tt" }, "Telugu": { "google": "te" }, "Thai": { "google": "th" }, "Tigrinya": { "google": "ti" }, "Tsonga": { "google": "ts" }, "Turkish": { "deepL": "TR", "google": "tr" }, "Turkmen": { "google": "tk" }, "Twi (Akan)": { "google": "ak" }, "Ukrainian": { "deepL": "UK", "google": "uk" }, "Urdu": { "google": "ur" }, "Uyghur": { "google": "ug" }, "Uzbek": { "google": "uz" }, "Vietnamese": { "google": "vi" }, "Welsh": { "google": "cy" }, "Xhosa": { "google": "xh" }, "Yiddish": { "google": "yi" }, "Yoruba": { "google": "yo" }, "Zulu": { "google": "zu" } };
+
+  const TARGETS = { "Afrikaans": { "google": "af" }, "Albanian": { "google": "sq" }, "Amharic": { "google": "am" }, "Arabic": { "deepL": "AR", "google": "ar" }, "Armenian": { "google": "hy" }, "Assamese": { "google": "as" }, "Aymara": { "google": "ay" }, "Azerbaijani": { "google": "az" }, "Bambara": { "google": "bm" }, "Basque": { "google": "eu" }, "Belarusian": { "google": "be" }, "Bengali": { "google": "bn" }, "Bhojpuri": { "google": "bho" }, "Bosnian": { "google": "bs" }, "Bulgarian": { "deepL": "BG", "google": "bg" }, "Catalan": { "google": "ca" }, "Cebuano": { "google": "ceb" }, "Chinese": { "Chinese (simplified)": { "deepL": "ZH", "google": "zh-CN" }, "Chinese (traditional)": { "google": "zh-TW" } }, "Corsican": { "google": "co" }, "Croatian": { "google": "hr" }, "Czech": { "deepL": "CS", "google": "cs" }, "Danish": { "deepL": "DA", "google": "da" }, "Dhivehi": { "google": "dv" }, "Dogri": { "google": "doi" }, "Dutch": { "deepL": "NL", "dlFormality": true, "google": "nl" }, "English": { "English (American)": { "deepL": "EN-US" }, "English (British)": { "deepL": "EN-GB" }, "English": { "google": "en" } }, "Esperanto": { "google": "eo" }, "Estonian": { "deepL": "ET", "google": "et" }, "Ewe": { "google": "ee" }, "Finnish": { "deepL": "FI", "google": "fi" }, "French": { "deepL": "FR", "dlFormality": true, "google": "fr" }, "Frisian": { "google": "fy" }, "Galician": { "google": "gl" }, "Georgian": { "google": "ka" }, "German": { "deepL": "DE", "dlFormality": true, "google": "de" }, "Greek": { "deepL": "EL", "google": "el" }, "Guarani": { "google": "gn" }, "Gujarati": { "google": "gu" }, "Haitian Creole": { "google": "ht" }, "Hausa": { "google": "ha" }, "Hawaiian": { "google": "haw" }, "Hebrew": { "google": "he" }, "Hindi": { "google": "hi" }, "Hmong": { "google": "hmn" }, "Hungarian": { "deepL": "HU", "google": "hu" }, "Icelandic": { "google": "is" }, "Igbo": { "google": "ig" }, "Ilocano": { "google": "ilo" }, "Indonesian": { "deepL": "ID", "google": "id" }, "Irish": { "google": "ga" }, "Italian": { "deepL": "IT", "dlFormality": true, "google": "it" }, "Japanese": { "deepL": "JA", "google": "ja" }, "Javanese": { "google": "jv" }, "Kannada": { "google": "kn" }, "Kazakh": { "google": "kk" }, "Khmer": { "google": "km" }, "Kinyarwanda": { "google": "rw" }, "Konkani": { "google": "gom" }, "Korean": { "google": "ko" }, "Krio": { "google": "kri" }, "Kurdish": { "google": "ku" }, "Kurdish (Sorani)": { "google": "ckb" }, "Kyrgyz": { "google": "ky" }, "Lao": { "google": "lo" }, "Latin": { "google": "la" }, "Latvian": { "deepL": "LV", "google": "lv" }, "Lingala": { "google": "ln" }, "Lithuanian": { "deepL": "LT", "google": "lt" }, "Luganda": { "google": "lg" }, "Luxembourgish": { "google": "lb" }, "Macedonian": { "google": "mk" }, "Maithili": { "google": "mai" }, "Malagasy": { "google": "mg" }, "Malay": { "google": "ms" }, "Malayalam": { "google": "ml" }, "Maltese": { "google": "mt" }, "Maori": { "google": "mi" }, "Marathi": { "google": "mr" }, "Meiteilon (Manipuri)": { "google": "mni-Mtei" }, "Mizo": { "google": "lus" }, "Mongolian": { "google": "mn" }, "Myanmar (Burmese)": { "google": "my" }, "Nepali": { "google": "ne" }, "Norwegian": { "google": "no" }, "Nyanja (Chichewa)": { "google": "ny" }, "Odia (Oriya)": { "google": "or" }, "Oromo": { "google": "om" }, "Pashto": { "google": "ps" }, "Persian": { "google": "fa" }, "Polish": { "deepL": "PL", "dlFormality": true, "google": "pl" }, "Portuguese": { "Portuguese (Brazilian)": { "deepL": "PT-BR", "dlFormality": true }, "Portuguese (European)": { "deepL": "PT-PT", "dlFormality": true }, "Portuguese (Portugal, Brazil)": { "google": "pt" } }, "Punjabi": { "google": "pa" }, "Quechua": { "google": "qu" }, "Romanian": { "deepL": "RO", "google": "ro" }, "Russian": { "deepL": "RU", "dlFormality": true, "google": "ru" }, "Samoan": { "google": "sm" }, "Sanskrit": { "google": "sa" }, "Scots Gaelic": { "google": "gd" }, "Sepedi": { "google": "nso" }, "Serbian": { "google": "sr" }, "Sesotho": { "google": "st" }, "Shona": { "google": "sn" }, "Sindhi": { "google": "sd" }, "Sinhala (Sinhalese)": { "google": "si" }, "Slovak": { "deepL": "SK", "google": "sk" }, "Slovenian": { "deepL": "SL", "google": "sl" }, "Somali": { "google": "so" }, "Spanish": { "deepL": "ES", "dlFormality": true, "google": "es" }, "Sundanese": { "google": "su" }, "Swahili": { "google": "sw" }, "Swedish": { "deepL": "SV", "google": "sv" }, "Tagalog (Filipino)": { "google": "tl" }, "Tajik": { "google": "tg" }, "Tamil": { "google": "ta" }, "Tatar": { "google": "tt" }, "Telugu": { "google": "te" }, "Thai": { "google": "th" }, "Tigrinya": { "google": "ti" }, "Tsonga": { "google": "ts" }, "Turkish": { "deepL": "TR", "google": "tr" }, "Turkmen": { "google": "tk" }, "Twi (Akan)": { "google": "ak" }, "Ukrainian": { "deepL": "UK", "google": "uk" }, "Urdu": { "google": "ur" }, "Uyghur": { "google": "ug" }, "Uzbek": { "google": "uz" }, "Vietnamese": { "google": "vi" }, "Welsh": { "google": "cy" }, "Xhosa": { "google": "xh" }, "Yiddish": { "google": "yi" }, "Yoruba": { "google": "yo" }, "Zulu": { "google": "zu" } };
+
+        // const llmTranslators = {"Anthropic":["Opus","Sonnet","Haiku"],"OpenAI":["openAI","GPT4o"]};
+        const llmTranslators = <?!= forJsExtractTranslatorNamesLLM(); ?>;
+
+        function translatorsList(allTargets, target, allSources, source) {
+            let targetObj = allTargets[target];
+            let sourceObj = allSources[source];
+            // Add openAI to source and target object
+            if (sourceObj.google) {
+              llmTranslators.OpenAI.forEach(el => {
+                sourceObj[el] = sourceObj.google;
+              });
+              llmTranslators.Anthropic.forEach(el => {
+                sourceObj[el] = sourceObj.google;
+              });
+            }
+
+            // allLanguages will be array of target languages
+            let allLanguages;
+            let ptValue;
+            if (targetObj.google) {
+              // Not Chinese, English, Portuguese (not language groups)
+              llmTranslators.OpenAI.forEach(el => {
+                targetObj[el] = targetObj.google;
+              });
+              llmTranslators.Anthropic.forEach(el => {
+                targetObj[el] = targetObj.google;
+              });
+            } else {
+              // Chinese, English, Portuguese (groups)
+              if (!targetObj.deepL) {
+                allLanguages = Object.keys(targetObj);
+                for (let i in allLanguages) {
+                  if (targetObj[allLanguages[i]].deepL && allLanguages[i].includes('Portuguese')) {
+                    ptValue = targetObj[allLanguages[i]].deepL;
+                  } else if (targetObj[allLanguages[i]].google && !allLanguages[i].includes('Portuguese')) {
+                    ptValue = targetObj[allLanguages[i]].google;
+                  }else{
+                    ptValue = null;
+                  }
+                  if (ptValue){
+                    llmTranslators.OpenAI.forEach(el => {
+                      targetObj[allLanguages[i]][el] = ptValue;
+                    });
+                    llmTranslators.Anthropic.forEach(el => {
+                      targetObj[allLanguages[i]][el] = ptValue;
+                    })
+                  }
+                }
+              }
+            }
+            // End. Add openAI to source and target object
+
+
+            // Translators list
+            const allTranslators = [];
+            if (targetObj.deepL == null && targetObj.openAI == null && targetObj.google == null) {
+              // Chinese, English, Portuguese language groups
+              for (let i in allLanguages) {
+                translatorsListHelper(allTranslators, targetObj[allLanguages[i]], target, sourceObj, allLanguages[i]);
+              }
+            } else {
+              // Not Chinese, English, Portuguese (not language groups)
+              translatorsListHelper(allTranslators, targetObj, target, sourceObj, target);
+            }
+            // End. Translators list
+
+
+            return allTranslators;
+        }
+
+        function translatorsListHelper(allTranslators, targetObj, target, sourceObj, lang) {
+            if (sourceObj.deepL != null && targetObj.deepL != null) {
+              if (targetObj.dlFormality === true) {
+                allTranslators.push({ label: 'DeepL formal ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"more"}` });
+                allTranslators.push({ label: 'DeepL informal ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"less"}` });
+              } else {
+                allTranslators.push({ label: 'DeepL ' + lang, value: `{"name":"${lang}", "deepL":"${targetObj.deepL}", "form":"default"}` });
+              }
+            }
+            if (targetObj.google != null) {
+              allTranslators.push({ label: 'Google ' + lang, value: `{"name":"${lang}", "google":"${targetObj.google}"}` });
+            }
+
+            const keys = Object.keys(llmTranslators);
+            for (let k in keys){
+              llmTranslators[keys[k]].forEach(el => {
+                if (sourceObj[el] != null && targetObj[el] != null) {
+                  const trName = el === 'openAI' ? LEGACY_OPENAI : el;
+                  allTranslators.push({ label: `${keys[k]} ${trName} ${lang}`, value: `{"label":"${keys[k]} ${trName}", "name":"${lang}", "${el}":"${targetObj[el]}"}` });
+                }
+              });
+            }
+          }
+
+        Vue.component('combo-select', {
+            template: `
+                <div class="combo-select">
+                    <input
+                        type="text"
+                        v-model="search"
+                        @input="filterOptions"
+                        @focus="onFocus"
+                        @blur="hideDropdown"
+                    >
+                    <ul v-if="showDropdown && filteredOptions.length">
+                        <li
+                            v-for="option in filteredOptions"
+                            :key="option.value"
+                            @mousedown.prevent="selectOption(option)"
+                        >
+                            {{ option.label }}
+                        </li>
+                    </ul>
+                </div>
+            `,
+            props: {
+                options: Array,
+                value: String
+            },
+            data() {
+                return {
+                    search: '',
+                    showDropdown: false,
+                    filteredOptions: []
+                }
+            },
+            methods: {
+                filterOptions() {
+                    this.filteredOptions = this.options.filter(option =>
+                        option.label.toLowerCase().includes(this.search.toLowerCase())
+                    )
+                },
+                selectOption(option) {
+                    this.search = option.label
+                    this.$emit('input', option.value)
+                    this.showDropdown = false
+                },
+                hideDropdown() {
+                    setTimeout(() => {
+                        this.showDropdown = false
+                    }, 100)
+                },
+                onFocus() {
+                    this.showDropdown = true
+                    this.$emit('focus')
+                    this.filteredOptions = this.options // Show all options when focused
+                }
+            },
+            created() {
+                this.filteredOptions = this.options
+                const selectedOption = this.options.find(option => option.value === this.value)
+                if (selectedOption) {
+                    this.search = selectedOption.label
+                }
+            },
+            watch: {
+                value(newValue) {
+                    const selectedOption = this.options.find(option => option.value === newValue)
+                    if (selectedOption) {
+                        this.search = selectedOption.label
+                    }
+                }
+            }
+        });
+
+        new Vue({
+            el: '#app',
+            data: {
+                selectedSource: '',
+                selectedTarget: '',
+                translators: [],
+                selectedTranslators: [],
+                isExecuting: false,
+                errorMessage: '',
+                successMessage: '',
+                SOURCES,
+                TARGETS
+            },
+            computed: {
+                sourceOptions() {
+                    return Object.keys(this.SOURCES).map(key => ({ label: key, value: key }));
+                },
+                targetOptions() {
+                    return Object.keys(this.TARGETS).map(key => ({ label: key, value: key }));
+                },
+                isFormValid() {
+                    return this.selectedSource && this.selectedTarget && 
+                           this.selectedSource !== this.selectedTarget && 
+                           this.selectedTranslators.length > 0;
+                }
+            },
+            methods: {
+                updateTranslators() {
+                    this.translators = [];
+                    this.selectedTranslators = [];
+                    this.errorMessage = '';
+                    if (this.selectedSource && this.selectedTarget) {
+                        if (this.selectedSource === this.selectedTarget) {
+                            this.errorMessage = 'Source and target languages cannot be the same.';
+                            this.$nextTick(() => {
+                              this.focusReportIssueLink();
+                            });
+                        } else {
+                            this.translators = translatorsList(this.TARGETS, this.selectedTarget, this.SOURCES, this.selectedSource);
+                        }
+                    }
+                },
+                focusReportIssueLink() {
+                  if (this.$refs.reportIssueLink) {
+                    this.$refs.reportIssueLink.focus();
+                  }
+                },
+                clearMessages() {
+                    this.errorMessage = '';
+                    this.successMessage = '';
+                },
+                handleFormSubmit() {
+                    this.isExecuting = true;
+                    this.errorMessage = '';
+                    this.successMessage = '';
+
+                    const finalSettings = {
+                        sourceTarget: `${this.selectedSource}->${this.selectedTarget}`,
+                        source: this.SOURCES[this.selectedSource],
+                        targets: this.selectedTranslators.map(t => JSON.parse(t))
+                    };
+
+                    google.script.run
+                        .withSuccessHandler(this.onSuccess)
+                        .withFailureHandler(this.onFailure)
+                        .saveLanguage(finalSettings);
+                },
+                onSuccess(result) {
+                    this.isExecuting = false;
+                    if (result.status === 'ok') {
+                        this.successMessage = `${this.selectedSource}->${this.selectedTarget} settings saved successfully!`;
+                        // this.selectedSource = '';
+                        // this.selectedTarget = '';
+                        // this.translators = [];
+                        // this.selectedTranslators = [];
+                    } else {
+                        this.errorMessage = result.message || 'An error occurred while saving settings.';
+                    }
+                },
+                onFailure(error) {
+                    this.isExecuting = false;
+                    this.errorMessage = 'An error occurred while saving settings.';
+                }
+            }
+        });
+  </script>
+</body>
+</html>

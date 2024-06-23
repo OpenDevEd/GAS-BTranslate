@@ -184,6 +184,34 @@
     select:focus {
       outline-color: #000000;
     }
+
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      /*background-color: #0F0E17;*/
+      padding: 10px;
+      /* position: sticky;*/
+      bottom: 0;
+    }
+
+    .footer-link {
+      color: #0F0E17;
+      text-decoration: none;
+      font-size: 14px;
+      margin: 5px 0;
+      transition: color 0.3s ease;
+    }
+
+    .footer-link:hover {
+      color: #E68225;
+    }
+
+    .footer-link {
+      width: 48%;
+    }
+
   </style>
 </head>
 
@@ -319,8 +347,16 @@
         <button @click="saveTranslator(providerName)" :disabled="isProcessing || !canSaveTranslator()">{{ editingTranslator ? 'Update' : 'Save' }}</button>
 
       </div>
-    </div>
 
+
+
+    </div>
+    <div class="footer-links">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Report+an+issue" class="footer-link" target="_blank">Report an issue</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Suggest+a+feature" class="footer-link" target="_blank">Suggest a feature</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Leave+feedback" class="footer-link" target="_blank">Leave feedback</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Ask+a+question" class="footer-link" target="_blank">Ask a question</a>
+    </div>
 
     <script>
       new Vue({

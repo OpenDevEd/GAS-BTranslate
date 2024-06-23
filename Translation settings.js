@@ -50,8 +50,16 @@ function getKeyExcludingNameAndForm(obj) {
 
 
 function saveLanguage(finalSettings) {
-  Logger.log('finalSettings=' + JSON.stringify(finalSettings));
+  //Logger.log('finalSettings=' + JSON.stringify(finalSettings));
   const translationSettings = getTranslationSettings();
+  if (translationSettings.hasOwnProperty('menuOrder')) {
+    if (translationSettings.menuOrder.length >= 30) {
+      return {
+        status: 'error', message: 'You\'ve already added 30 translation settings.'
+      }
+    }
+  }
+
   let newKey, realKey;
   const newSource = new Object();
   if (finalSettings.source.google) {
