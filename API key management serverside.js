@@ -140,9 +140,9 @@ function allProviders() {
 
 const settings = {
   Anthropic: {
-    arrayAllModels: ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+    arrayAllModels: ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
     maxTokens: { min: 0, max: 4000, step: 1 },
-    maxTokensForModel: [4000, 4000, 4000],
+    maxTokensForModel: [4000, 4000, 4000, 4000],
     temperature: { min: 0, max: 1, step: 0.1 },
     useDefaultPrompt: true,
     defaultPrompt: 'Translate from <S> to <T>. Return only translation.'
