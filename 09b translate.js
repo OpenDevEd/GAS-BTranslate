@@ -329,7 +329,7 @@ function translateSelectionAndAppendL(settings) {
                   let reverseTranslationOrig = deepLArray[j].dest;
                   if (['PT-BR', 'PT-PT'].includes(deepLArray[j].dest)) {
                     reverseTranslationOrig = 'PT';
-                  }else if (['EN-GB', 'EN-US'].includes(deepLArray[j].dest)) {
+                  } else if (['EN-GB', 'EN-US'].includes(deepLArray[j].dest)) {
                     reverseTranslationOrig = 'EN';
                   }
                   localDeepL(out, reverseTranslationOrig, deepLArray[j].origin, 'default', true, cleanedString);
@@ -1008,9 +1008,6 @@ function checkLtr(targetLang) {
 
 function convertToHtml(element, elementText) {
   const htmlTextArray = [];
-  // const elementType = String(element.getType());
-  // Logger.log(elementType);
-  // if (elementType === 'PARAGRAPH') {
 
   const numChildren = element.getNumChildren();
   for (let j = 0; j < numChildren; j++) {
@@ -1022,10 +1019,8 @@ function convertToHtml(element, elementText) {
     for (let k = 0; k < indices.length; k++) {
       const partAttributes = paragraphText.getAttributes(indices[k]);
       // Logger.log(partAttributes);
-      if (indices.length === 1) {
+      if (k === indices.length - 1) {
         end = elementText.length;
-      } else if (k == indices.length - 1) {
-        end = elementText.length - 1;
       } else {
         end = indices[k + 1];
       }
@@ -1047,5 +1042,5 @@ function convertToHtml(element, elementText) {
   elementText = htmlTextArray.join('');
   // Logger.log(elementText);
   return elementText;
-  //  }
+
 }
