@@ -77,7 +77,7 @@ function submenu_09_translate_basic(e) {
         }
 
         // End. List of translators
-        let trSlotName = `tra ${j} ${translationSettings[key].sourceTarget} (${translators.join(', ')})`;
+        let trSlotName = `tra${j} ${translationSettings[key].sourceTarget} (${translators.join(', ')})`;
         if (trSlotName.length > 50) {
           trSlotName = trSlotName.replaceAll(' formal', ' f.');
           trSlotName = trSlotName.replaceAll(' informal', ' inf.');

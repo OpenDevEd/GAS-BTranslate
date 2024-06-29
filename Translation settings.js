@@ -84,7 +84,7 @@ function saveLanguage(finalSettings) {
       newSource.deepL = finalSettings.source.deepL;
     } else {
       realKey = getKeyExcludingNameAndForm(finalSettings.targets[i]);
-      newKey += realKey;
+      newKey += realKey + finalSettings.targets[i][realKey];
       newSource[realKey] = finalSettings.source[realKey];
     }
   }
