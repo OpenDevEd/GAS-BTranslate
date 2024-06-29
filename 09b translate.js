@@ -99,30 +99,36 @@ function translateSelectionAndAppendL(settings) {
     const anthropicArray = [];
     let translationsArray = [];
     let translationsToInsert = [];
-    let destLang;
+    let destLang, originLang;
     for (let i in settings.targets) {
       const keys = Object.keys(settings.targets[i]);
       if (settings.targets[i].deepL) {
         deepLArray.push({ origin: settings.source.deepL, dest: settings.targets[i].deepL, formality: settings.targets[i].form });
         destLang = settings.targets[i].deepL;
+        originLang = settings.source.deepL;
       } else if (settings.targets[i].google) {
         googleArray.push({ origin: settings.source.google, dest: settings.targets[i].google });
         destLang = settings.targets[i].google;
+        originLang = settings.source.google;
       } else {
         for (let j in keys) {
           if (llmTranslators.OpenAI.includes(keys[j])) {
             openAIArray.push({ origin: settings.source[keys[j]], dest: settings.targets[i].name, settings: llmTranslators.allModelsByNames[keys[j]] });
             destLang = settings.targets[i].name;
+            originLang = settings.source[keys[j]];
           }
           if (llmTranslators.Anthropic.includes(keys[j])) {
             anthropicArray.push({ origin: settings.source[keys[j]], dest: settings.targets[i].name, settings: llmTranslators.allModelsByNames[keys[j]] });
             destLang = settings.targets[i].name;
+            originLang = settings.source[keys[j]];
           }
         }
       }
     }
 
     const ltrLang = checkLtr(destLang);
+
+    const ltrLangReverse = checkLtr(originLang);
 
     // Logger.log(deepLArray);
     // Logger.log(googleArray);
@@ -166,7 +172,7 @@ function translateSelectionAndAppendL(settings) {
     appendReverseTranslation = appendReverseTranslation === 'yes' ? true : false;
 
     if (format.style == 'footnotes') {
-      appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, preserveFormatting);
+      appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, ltrLangReverse, preserveFormatting);
     } else if (format.style == 'txt') {
 
       const aboveBelow = getSettings(true, 'above', aboveBelowStyles, 'ABOVE_BELOW_SETTINGS');
@@ -236,16 +242,18 @@ function translateSelectionAndAppendL(settings) {
                 function localOpenAI(elementText, origin, dest, reverseTranslated) {
                   let reverseTranslatedMark = '';
                   let lastSymbolLinkText = '》';
+                  let localLtr = ltrLang;
                   let out = translateTextOpenAI(elementText, origin, dest, chatGPTApiKey, openAIArray[j].settings, preserveFormatting);
                   if (reverseTranslated === true) {
                     out += '》';
                     reverseTranslatedMark = ' reverse-translated';
                     lastSymbolLinkText = ':';
+                    localLtr = ltrLangReverse;
                   }
                   const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
                   const openAILinkText = '《' + trName + ":" + dest + reverseTranslatedMark + lastSymbolLinkText;
                   const openAIURL = 'https://chat.openai.com/';
-                  collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL, reverseTranslated);
+                  collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL, reverseTranslated, localLtr);
                   return out;
                 }
                 const out = localOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, false);
@@ -260,16 +268,18 @@ function translateSelectionAndAppendL(settings) {
                 function localAnthropic(elementText, origin, dest, reverseTranslated) {
                   let reverseTranslatedMark = '';
                   let lastSymbolLinkText = '》';
+                  let localLtr = ltrLang;
                   let out = translateTextAnthropic(elementText, origin, dest, anthropicApiKey, anthropicArray[j].settings, preserveFormatting);
                   if (reverseTranslated === true) {
                     out += '》';
                     reverseTranslatedMark = ' reverse-translated';
                     lastSymbolLinkText = ':';
+                    localLtr = ltrLangReverse;
                   }
                   const trName = anthropicArray[j].settings.name;
                   const anthropicLinkText = "《" + trName + ":" + dest + reverseTranslatedMark + lastSymbolLinkText;
                   const anthropicURL = 'https://claude.ai/chats';
-                  collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL, reverseTranslated);
+                  collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL, reverseTranslated, localLtr);
                   return out;
                 }
                 const out = localAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, false);
@@ -284,15 +294,17 @@ function translateSelectionAndAppendL(settings) {
                   //Logger.log('%s %s %s %s %s', elementText, origin, dest, reverseTranslated, elementTextWithoutHtml);
                   let reverseTranslatedMark = '';
                   let lastSymbolLinkText = '》';
+                  let localLtr = ltrLang;
                   let out = translateText(elementText, origin, dest);
                   if (reverseTranslated === true) {
                     out += '》';
                     reverseTranslatedMark = ' reverse-translated';
                     lastSymbolLinkText = ':';
+                    localLtr = ltrLangReverse;
                   }
                   const glinkText = "《G:" + dest + reverseTranslatedMark + lastSymbolLinkText;
                   const gtrURL = getgtrURL(elementTextWithoutHtml, origin, dest);
-                  collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL, reverseTranslated);
+                  collectTranslations(translationsArray, translationsToInsert, out, glinkText, gtrURL, reverseTranslated, localLtr);
                   return out;
                 }
                 const out = localGoogle(elementText, googleArray[j].origin, googleArray[j].dest, false, elementTextWithoutHtml);
@@ -307,11 +319,13 @@ function translateSelectionAndAppendL(settings) {
                 function localDeepL(elementText, origin, dest, formality, reverseTranslated, elementTextWithoutHtml) {
                   let reverseTranslatedMark = '';
                   let lastSymbolLinkText = '》';
+                  let localLtr = ltrLang;
                   let out = translateTextDeepL(elementText, origin, dest, formality, deepLApiKey, preserveFormatting);
                   if (reverseTranslated === true) {
                     out += '》';
                     reverseTranslatedMark = ' reverse-translated';
                     lastSymbolLinkText = ':';
+                    localLtr = ltrLangReverse;
                   }
                   if (formality == 'default') {
                     formality = '';
@@ -320,7 +334,7 @@ function translateSelectionAndAppendL(settings) {
                   }
                   const dLlinkText = '《D:' + dest + formality + reverseTranslatedMark + lastSymbolLinkText;
                   const DeepLURL = getDeepLURL(elementTextWithoutHtml, origin, dest);
-                  collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL, reverseTranslated);
+                  collectTranslations(translationsArray, translationsToInsert, out, dLlinkText, DeepLURL, reverseTranslated, localLtr);
                   return out;
                 }
                 const out = localDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, false, elementTextWithoutHtml);
@@ -402,7 +416,7 @@ function translateSelectionAndAppendL(settings) {
   }
 }
 
-function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, preserveFormatting) {
+function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, ltrLangReverse, preserveFormatting) {
   const doc = DocumentApp.getActiveDocument();
   const documentId = doc.getId();
 
@@ -442,7 +456,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
             }
             linkText = "《D:" + deepLArray[j].dest + formality + "》";
             linkUrl = getDeepLURL(elementTextWithoutHtml, deepLArray[j].origin, deepLArray[j].dest);
-            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl);
+            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl, false, ltrLang);
           }
           // End. Translates using DeepL
 
@@ -452,7 +466,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
 
             linkText = "《G:" + googleArray[j].dest + "》";
             linkUrl = getgtrURL(elementTextWithoutHtml, googleArray[j].origin, googleArray[j].dest);
-            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl);
+            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl, false, ltrLang);
           }
           // End. Translates using Google Translate
 
@@ -464,7 +478,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
             const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
             const openAILinkText = "《" + trName + ":" + openAIArray[j].dest + "》";
             const openAIURL = getOpenAIURL(elementText, openAIArray[j].origin, openAIArray[j].dest);
-            collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL);
+            collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL, false, ltrLang);
           }
           // End. Translate using OpenAI API
 
@@ -474,7 +488,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
             const trName = anthropicArray[j].settings.name;
             const anthropicLinkText = "《" + trName + ":" + anthropicArray[j].dest + "》";
             const anthropicURL = 'https://claude.ai/chats';
-            collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL);
+            collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL, false, ltrLang);
           }
 
           // rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, translationsToInsert[0], namedRanges, footnotesInfo);
@@ -923,11 +937,11 @@ function markFootnotePlace(doc, newPara, namedRanges, footnotesInfo) {
 
 // Detects identical translations
 // appendFootnotes, translateSelectionAndAppendL use the function
-function collectTranslations(translationsArray, translationsToInsert, out, linkText, url, reverseTranslated) {
+function collectTranslations(translationsArray, translationsToInsert, out, linkText, url, reverseTranslated, ltrLang) {
   const index = translationsArray.indexOf(out);
   if (index == -1) {
     //Logger.log('New: ' + out + ' ' + linkText + ' ' + JSON.stringify(translationsArray));
-    const objectToInsert = { out: out, translators: [{ linkText: linkText, url: url }] };
+    const objectToInsert = { out: out, translators: [{ linkText: linkText, url: url }], ltrLang: ltrLang };
     if (reverseTranslated === true) {
       // translationsArray.unshift(out);
       // translationsToInsert.unshift(objectToInsert);
@@ -993,7 +1007,8 @@ function insertTranslations(translationToInsert, parent, style, parPosition, ltr
     newPara.editAsText().setLinkUrl(startEndArray[l].start, startEndArray[l].end, startEndArray[l].url);
     newPara.editAsText().setUnderline(startEndArray[l].start, startEndArray[l].end, false);
   }
-  newPara.setLeftToRight(ltrLang);
+  // newPara.setLeftToRight(ltrLang);
+  newPara.setLeftToRight(translationToInsert.ltrLang);
   return newPara;
 }
 
