@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -90,7 +91,8 @@
       -webkit-appearance: none;
       width: 18px;
       height: 18px;
-      border: 1px solid #E68225;;
+      border: 1px solid #E68225;
+      ;
       border-radius: 1px;
       outline: none;
       cursor: pointer;
@@ -149,6 +151,47 @@
     select:focus {
       outline-color: #000000;
     }
+
+.llm-message {
+  margin-top: 80px;
+  padding: 10px;
+  border-radius: 5px;
+  width: calc(100% - 12px); /* Same width as the Save button */
+  box-sizing: border-box;
+}
+
+.orange-border {
+  border: 2px solid #E68225;
+}
+
+.grey-border {
+  border: 2px solid #ccc;
+}
+
+.llm-message p {
+  margin-bottom: 10px;
+}
+
+.llm-message button {
+  background-color: #E68225;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: block; /* Make the button a block element */
+  margin: 0 auto; /* Center the button horizontally */
+  width: fit-content; /* Make the button width fit its content */
+}
+
+.llm-message button:hover {
+  background-color: #D67215;
+}
+
+.llm-message button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
   </style>
 </head>
 
@@ -192,13 +235,27 @@
           <input type="submit" value="Save" id="submitButton" :disabled="!isFormValid || isExecuting">
         </div>
       </form>
+
+      <div v-if="showLLMMessage" :class="['llm-message', showLLMMessage === 'add' ? 'orange-border' : 'grey-border']">
+        <p v-if="showLLMMessage === 'add'">
+          Do you want to use ChatGPT or Claude for the translation? If yes, go to 'API key management, LLM settings'
+        </p>
+        <p v-if="showLLMMessage === 'more'">
+          Do you want to add more LLM powered translators? Go to 'API key management, LLM settings'
+        </p>
+        <button @click="openApiKeyManagement" :disabled="isExecuting">API key management, LLM settings</button>
+      </div>
     </div>
 
     <div class="footer-links">
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Report+an+issue" class="footer-link" target="_blank" ref="reportIssueLink">Report an issue</a>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Suggest+a+feature" class="footer-link" target="_blank">Suggest a feature</a>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Leave+feedback" class="footer-link" target="_blank">Leave feedback</a>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Ask+a+question" class="footer-link" target="_blank">Ask a question</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Report+an+issue"
+        class="footer-link" target="_blank" ref="reportIssueLink">Report an issue</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Suggest+a+feature"
+        class="footer-link" target="_blank">Suggest a feature</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Leave+feedback"
+        class="footer-link" target="_blank">Leave feedback</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmq6Xc8cALKeFGaQIz1qEunsWf95HI_8NLfd89hDK09SqgLg/viewform?usp=pp_url&entry.346309948=bTranslate&entry.753172290=Ask+a+question"
+        class="footer-link" target="_blank">Ask a question</a>
     </div>
   </div>
 
@@ -397,6 +454,20 @@
                     return this.selectedSource && this.selectedTarget && 
                            this.selectedSource !== this.selectedTarget && 
                            this.selectedTranslators.length > 0;
+                },
+                showLLMMessage() {
+                  if (this.translators.length === 0) return null;
+                  
+                  const hasOnlyGoogleDeepL = this.translators.every(t => {
+                    const obj = JSON.parse(t.value);
+                    return Object.keys(obj).every(key => ['google', 'deepL', 'name', 'form'].includes(key));
+                  });
+                  
+                  if (hasOnlyGoogleDeepL) {
+                    return 'add';
+                  } else {
+                    return 'more';
+                  }
                 }
             },
             methods: {
@@ -455,9 +526,22 @@
                 onFailure(error) {
                     this.isExecuting = false;
                     this.errorMessage = 'An error occurred while saving settings.';
+                },
+                openApiKeyManagement() {
+                  this.isExecuting = true;
+                  google.script.run
+                    .withSuccessHandler(() => {
+                      this.isExecuting = false;
+                    })
+                    .withFailureHandler(() => {
+                      this.isExecuting = false;
+                      this.errorMessage = 'Failed to open API key management sidebar.';
+                    })
+                    .apiKeyManagementSidebar();
                 }
             }
         });
   </script>
 </body>
+
 </html>

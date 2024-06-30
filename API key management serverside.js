@@ -1,5 +1,5 @@
 function apiKeyManagementSidebar() {
-  universalSidebar('API key management', 'bTranslate: API keys');
+  universalSidebar('API key management', 'bTranslate: API keys, LLM settings');
 }
 
 function universalSidebar(htmlFile, title) {
