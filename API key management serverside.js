@@ -8,10 +8,13 @@ function universalSidebar(htmlFile, title) {
   DocumentApp.getUi().showSidebar(htmlOutput.setTitle(title));
 }
 
-function setLegacyAiModels() {
-  let arrayTranslators = {
-    OpenAI: [LEGACY_OPENAI_MODEL],
-    Anthropic: []
+function setDefaultAiModels(theyUseLegacySettings) {
+  const arrayTranslators = {
+    OpenAI: [DEFAULT_OPENAI_MODEL],
+    Anthropic: [DEFAULT_ANTHROPIC_MODEL]
+  }
+  if (theyUseLegacySettings === true) {
+    arrayTranslators.OpenAI.unshift(LEGACY_OPENAI_MODEL);
   }
   setAiModels(arrayTranslators);
   return JSON.stringify(arrayTranslators);
@@ -27,7 +30,20 @@ function getAiModels() {
   let arrayTranslators = properties.getProperty('AI_MODELS');
 
   if (arrayTranslators == null) {
-    arrayTranslators = setLegacyAiModels();
+    let theyUseLegacySettings = false;
+    const translationSettings = getTranslationSettings();
+    for (let code in translationSettings) {
+      if (code !== 'menuOrder') {
+        const source = translationSettings[code].source;
+        const keys = Object.keys(source);
+        // 'openAI' key means they use legacy settings
+        if (keys.includes(LEGACY_OPENAI_MODEL.name)) {
+          theyUseLegacySettings = true;
+          break;
+        }
+      }
+    }
+    arrayTranslators = setDefaultAiModels(theyUseLegacySettings);
   }
   //Logger.log(arrayTranslators);
   return arrayTranslators;
