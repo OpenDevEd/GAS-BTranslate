@@ -6,11 +6,11 @@ function getgtrURL(txt, origin, dest) {
 // getTextAndTranslation, translateSelectionAndAppendL use the function
 function translateText(text, origin, dest) {
   try {
-    if (origin === dest) return text;
-    return LanguageApp.translate(text, origin, dest);
+    //if (origin === dest) return text; 
+    return { status: 'ok', message: LanguageApp.translate(text, origin, dest)};
   }
   catch (e) {
-    return e;
+    return { status: 'error', message: e };
   }
 }
 

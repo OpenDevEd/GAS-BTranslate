@@ -20,21 +20,21 @@ function translateTextDeepL(txt, from, to, formality, apiKey, preserveFormatting
       muteHttpExceptions: false
     };
 
-  if (preserveFormatting === true){
-    options.payload.tag_handling = 'html';
-  }
+    if (preserveFormatting === true) {
+      options.payload.tag_handling = 'html';
+    }
 
     const response = UrlFetchApp.fetch(url, options);
     const json = response.getContentText();
     const data = JSON.parse(json);
     if ('translations' in data) {
-      return data.translations[0].text;
+      return { status: 'ok', message: data.translations[0].text };
     } else {
-      return json;
+      throw new Error(json);
     }
   }
   catch (e) {
-    return e;
+    return { status: 'error', message: e };
   }
 }
 

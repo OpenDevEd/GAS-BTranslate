@@ -49,14 +49,9 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
       throw new Error('Error in translateTextOpenAI: unexpected api.openai.com response.');
     }
 
-    return json.choices[0].message.content;
+    return { status: 'ok', message: json.choices[0].message.content };
   }
   catch (e) {
-    return e;
+    return { status: 'error', message: e };
   }
 }
-
-// translateSelectionAndAppendL uses the function
-function getOpenAIURL(txt, from, to) {
-  return 'https://chat.openai.com/';
-};

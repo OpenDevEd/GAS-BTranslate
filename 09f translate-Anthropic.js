@@ -45,9 +45,9 @@ function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, model
       throw new Error(`API error: ${data.error.message}`);
     }
 
-    return data.content[0].text;
+    return { status: 'ok', message: data.content[0].text};
   }
   catch (e) {
-    return e;
+    return { status: 'error', message: e };
   }
 }
