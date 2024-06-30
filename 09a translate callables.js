@@ -92,31 +92,37 @@ function submenu_09_translate_basic(e) {
     }
   }
 
-  TrMenu.addSeparator()
-    .addItem('Translation settings', 'translationSettingsSidebar')
-    .addItem('Clear translation settings', 'clearTranslationSettings')
-    .addItem('Example settings: Google', 'exampleTranslationSettingsGoogle')
-    .addItem('Example settings: DeepL', 'exampleTranslationSettingsDeepL');
-
   TrMenu.addSeparator();
 
-  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'txt', formatStyles, 'formatStyles', 'FORMAT_SETTINGS');
+  // Submenu "Translation Settings"
+  const menuTranslationSettings = DocumentApp.getUi().createMenu('Translation settings');
+  menuTranslationSettings.addItem('Add translation settings', 'translationSettingsSidebar')
+  menuTranslationSettings.addItem('Clear translation settings', 'clearTranslationSettings')
+  menuTranslationSettings.addItem('Example settings: Google', 'exampleTranslationSettingsGoogle')
+  menuTranslationSettings.addItem('Example settings: DeepL', 'exampleTranslationSettingsDeepL');
+  menuTranslationSettings.addSeparator();
+  greenCheckboxMenuHelper(menuTranslationSettings, tryToRetrieveProperties, 'yes', reverseTranslationStyles, 'reverseTranslationStyles', 'REVERSE_TRANSLATION_SETTINGS');
+  TrMenu.addSubMenu(menuTranslationSettings);
+  // End.Submenu "Format"
 
-  // const activeFormatStyle = getFormatSettings(tryToRetrieveProperties);
-  // let selectedStyleMarker = '';
-  // for (let formatStyle in formatStyles) {
-  //   selectedStyleMarker = formatStyle === activeFormatStyle.style ? activeFormatStyle.marker + ' ' : '';
-  //   TrMenu.addItem(selectedStyleMarker + formatStyles[formatStyle].menuText, 'formatStyles.' + formatStyle + '.run');
-  // }
+  // Submenu "Format"
+  const menuFormat = DocumentApp.getUi().createMenu('Format settings');
 
-  TrMenu.addSeparator();
-  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'yes', preserveFormattingStyles, 'preserveFormattingStyles', 'PRESERVE_FORMATTING_SETTINGS');
+  greenCheckboxMenuHelper(menuFormat, tryToRetrieveProperties, 'txt', formatStyles, 'formatStyles', 'FORMAT_SETTINGS');
+  menuFormat.addSeparator();
 
-  TrMenu.addSeparator();
-  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'above', aboveBelowStyles, 'aboveBelowStyles', 'ABOVE_BELOW_SETTINGS');
+  greenCheckboxMenuHelper(menuFormat, tryToRetrieveProperties, 'yes', preserveFormattingStyles, 'preserveFormattingStyles', 'PRESERVE_FORMATTING_SETTINGS');
 
-  TrMenu.addSeparator();
-  greenCheckboxMenuHelper(TrMenu, tryToRetrieveProperties, 'yes', reverseTranslationStyles, 'reverseTranslationStyles', 'REVERSE_TRANSLATION_SETTINGS');
+  menuFormat.addSeparator();
+  greenCheckboxMenuHelper(menuFormat, tryToRetrieveProperties, 'above', aboveBelowStyles, 'aboveBelowStyles', 'ABOVE_BELOW_SETTINGS');
+
+  TrMenu.addSubMenu(menuFormat);
+  // End.Submenu "Format"
+
+
+
+
+
 
   // const activePreserveFormattingStyle = getPreserveFormattingSettings(tryToRetrieveProperties);
   // let selectedPreserveFormattingStyleMarker = '';
@@ -124,7 +130,7 @@ function submenu_09_translate_basic(e) {
   //   selectedPreserveFormattingStyleMarker = formatStyle === activePreserveFormattingStyle.style ? activePreserveFormattingStyle.marker + ' ' : '';
   //   TrMenu.addItem(selectedPreserveFormattingStyleMarker + preserveFormattingStyles[formatStyle].menuText, 'preserveFormattingStyles.' + formatStyle + '.run');
   // }
-
+  TrMenu.addItem('API key management, LLM settings', 'apiKeyManagementSidebar');
   TrMenu.addSeparator();
 
   /* end of main items */
@@ -175,7 +181,7 @@ function submenu_09_translate_basic(e) {
 
   //TrMenu.addSubMenu(submenu3);
 
-  TrMenu.addItem('API key management', 'apiKeyManagementSidebar');
+
 
   /* start submenu 1: Utilities */
   TrMenu.addSubMenu(DocumentApp.getUi().createMenu('Utilities')
