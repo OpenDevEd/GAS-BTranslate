@@ -1,26 +1,4 @@
-// Menu item 'Add API key for user / all documents'
-function enterDeepLAPIkeyUser() {
-  enterDeepLAPIkey('user', 'DEEPL');
-}
-
-// Menu item 'Add/change API key for document' 
-function enterDeepLAPIkeyDoc() {
-  enterDeepLAPIkey('doc', 'DEEPL');
-}
-
-// Menu item 'Add API key for user / all documents'
-function enterChatGPTAPIkeyUser() {
-  enterDeepLAPIkey('user', 'CHATGPT');
-}
-
-// Menu item 'Add/change API key for document' 
-function enterChatGPTAPIkeyDoc() {
-  enterDeepLAPIkey('doc', 'CHATGPT');
-}
-
-// enterDeepLAPIkeyUser, enterDeepLAPIkeyDoc, translateSelectionAndAppendL use the function
-// translatorName: DeepL or ChatGPT
-// propertyName: 'DeepLAPIkey' or 'ChatGPTAPIkey'
+// translateSelectionAndAppendL use the function
 function enterDeepLAPIkey(storage, translator) {
   const translatorName = PROPERTY_NAMES[translator]['textName'];
   const propertyName = PROPERTY_NAMES[translator]['propertyApiKeyName'];
@@ -89,13 +67,6 @@ function testDeeplKey(apiKey) {
   catch (error) {
     return { status: 'error', message: 'Error in testDeeplKey (2)' };
   }
-}
-
-
-function testTestChatGPTKey() {
-  const apiKey = getDeepLAPIkey('user', 'ChatGPTAPIkey');
-  const result = testChatGPTKey(apiKey);
-  Logger.log(result);
 }
 
 // Checks ChatGPT API key
@@ -170,39 +141,6 @@ function testAnthropicKey(apiKey) {
   }
 }
 
-// Menu item 'Remove DeepL API key for user / all documents'
-function removeDeepLAPIkeyUser() {
-  removeAPIkeyUser('DeepLAPIkey');
-}
-
-// Menu item 'Remove DeepL API key for document'
-function removeDeepLAPIkeyDoc() {
-  removeAPIkeyDoc('DeepLAPIkey');
-}
-
-// Menu item 'Remove ChatGPT API key for user / all documents'
-function removeChatGPTAPIkeyUser() {
-  removeAPIkeyUser('ChatGPTAPIkey');
-}
-
-// Menu item 'Remove ChatGPT API key for document'
-function removeChatGPTAPIkeyDoc() {
-  removeAPIkeyDoc('ChatGPTAPIkey');
-}
-
-function removeAPIkeyUser(propertyName) {
-  const userProperties = PropertiesService.getUserProperties();
-  userProperties.deleteProperty(propertyName);
-  onOpen();
-}
-
-
-function removeAPIkeyDoc(propertyName) {
-  const docProperties = PropertiesService.getDocumentProperties();
-  docProperties.deleteProperty(propertyName);
-  onOpen();
-}
-
 // translateSelectionAndAppendL uses the function
 // propertyName: 'DeepLAPIkey' or 'ChatGPTAPIkey'
 function getDeepLAPIkey(storage, propertyName) {
@@ -214,38 +152,6 @@ function getDeepLAPIkey(storage, propertyName) {
   }
   const key = properties.getProperty(propertyName);
   return key;
-}
-
-
-
-// Menu item 'Copy user DeepL API key to document'
-function copyUserDeepLApiKeyToDocument() {
-  copyUserApiKeyToDocument('DEEPL');
-}
-
-// Menu item 'Copy user ChatGPT API key to document'
-function copyUserChatGPTApiKeyToDocument() {
-  copyUserApiKeyToDocument('CHATGPT');
-}
-
-// old
-// Menu item 'Copy user API key to document'
-function copyUserApiKeyToDocument(translator) {
-  const translatorName = PROPERTY_NAMES[translator]['textName'];
-  const propertyName = PROPERTY_NAMES[translator]['propertyApiKeyName'];
-  let deeplApiKeyUser = getDeepLAPIkey('user', propertyName);
-  if (deeplApiKeyUser == null) {
-    alert("Error! " + translatorName + " API key for user/all documents doesn't exist. Add it.");
-    keyResult = enterDeepLAPIkey('user', translator);
-    if (keyResult.status == 'ok') {
-      deeplApiKeyUser = keyResult.apiKey;
-    } else if (keyResult.status == 'error') {
-      return 0;
-    }
-  }
-  properties = PropertiesService.getDocumentProperties();
-  properties.setProperty(propertyName, deeplApiKeyUser);
-  onOpen();
 }
 
 // 2024

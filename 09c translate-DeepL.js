@@ -1,6 +1,7 @@
 // translateSelectionAndAppendL uses the function
 function translateTextDeepL(txt, from, to, formality, apiKey, preserveFormatting) {
   try {
+    // Logger.log(`DeepL _${txt}_`);
     const url = 'https://api.deepl.com/v2/translate';
 
     const options = {

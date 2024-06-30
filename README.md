@@ -1,1 +1,1 @@
-# BTranslate
+# bTranslate

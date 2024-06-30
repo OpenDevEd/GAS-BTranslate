@@ -71,15 +71,6 @@ function getDeeplApiKeySettings(tryToRetrieveProperties, translator) {
   return resultObj;
 }
 
-//Old
-function activateDeeplApiKeySettings(obj, translatorName) {
-  const apiKeySettingsObj = translatorName === 'DEEPL' ? deeplApiKeySettings : chatGPTApiKeySettings;
-  // Finds key in apiKeySettingsObj where value equals obj
-  const settings = Object.keys(apiKeySettingsObj).find(key => apiKeySettingsObj[key] === obj);
-  const userProperties = PropertiesService.getUserProperties();
-  userProperties.setProperty(translatorName + '_API_KEY_SETTINGS', settings);
-  onOpen();
-}
 
 // 2024
 // DeepL, OpenAI, Anthropic
@@ -92,7 +83,6 @@ function setDefaultAPIkey(provider, storage) {
   userProperties.setProperty(PROPERTY_NAMES[provider]['propertyApiKeySettingsName'], storage);
   return { status: 'ok' };
 }
-
 
 
 // Menu items of DeepL API key settings

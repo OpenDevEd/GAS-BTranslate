@@ -3,6 +3,7 @@ function clearReverseTranslationSettings() {
   userProperties.deleteProperty('REVERSE_TRANSLATION_SETTINGS');
   onOpen();
 }
+
 function testReverseTranslationSettings() {
   Logger.log(PropertiesService.getUserProperties().getProperty('REVERSE_TRANSLATION_SETTINGS'));
 }

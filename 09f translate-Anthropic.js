@@ -1,5 +1,6 @@
 function translateTextAnthropic(inputText, sourceLang, targetLang, apiKey, modelSettings, preserveFormatting) {
   try {
+    // Logger.log(`Anthropic _${inputText}_`);
     let { temperature, maxTokens, customPrompt, useDefaultPrompt, model } = { ...modelSettings };
     if (useDefaultPrompt === true) {
       customPrompt = settings.Anthropic.defaultPrompt;

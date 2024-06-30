@@ -1,24 +1,3 @@
-// out-of-use
-function setPropertyObj(str, styleSet) {
-  var sty = JSON.stringify(styleSet);
-  // alert("setProperty "+str+": "+sty);
-  var userProperties = PropertiesService.getUserProperties();
-  userProperties.setProperty(str, sty);
-}
-
-// out-of-use
-function getPropertyObj(str) {
-  var sty = null;
-  try {
-    var userProperties = PropertiesService.getUserProperties();
-    var proo = userProperties.getProperty(str);
-    // alert("getProperty "+str+": "+proo);
-    sty = JSON.parse(proo);
-  } catch (e) {
-  };
-  return sty;
-}
-
 // ---- Get selected paragraphs --------
 
 // translateSelectionAndAppendL uses the function
@@ -171,7 +150,7 @@ function getParagraphsInBodyAndFootnotesExtended(onePara, getBodyParas, getFootn
   return paraout;
 }
 
-// enterDeepLAPIkey, changeVersion (out-of-use) use the function
+// enterDeepLAPIkey, use the function
 function getValueFromUser(title, text, defaultOK, defaultCancel, defaultClose) {
   text = text || "Please enter a value.";
   defaultOK = defaultOK || "";
@@ -235,7 +214,6 @@ function setBothTextColors(target, backgroundColor, foregroundColor) {
   }
 }
 
-// out-of-use
 function getConfirmationFromUser(text) {
   // Display a dialog box with a message and "Yes" and "No" buttons.
   var ui = DocumentApp.getUi();
@@ -248,32 +226,7 @@ function getConfirmationFromUser(text) {
   }
 }
 
-// whoami and others function use the function 
+// Many functions use the function 
 function alert(text) {
   DocumentApp.getUi().alert(text);
-};
-
-// out-of-use
-function alertv(text, myvariable) {
-  DocumentApp.getUi().alert(text + " = " + JSON.stringify(myvariable));
-};
-
-// out-of-use
-function onlyUnique(value, index, self) {
-  return self.indexOf(value) === index;
-};
-
-// out-of-use
-function getColourByName(name) {
-  if (name) {
-    if (htmlColourNames[name]) {
-      return htmlColourNames[name];
-    } else if (standardColorObjectGoogle[name]) {
-      return standardColorObjectGoogle[name];
-    } else {
-      return null;
-    };
-  } else {
-    return null;
-  };
 };

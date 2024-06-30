@@ -1,5 +1,6 @@
 function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSettings, preserveFormatting) {
   try {
+    // Logger.log(`OpenAI _${inputText}_`);
     let { temperature, maxTokens, customPrompt, useDefaultPrompt, model } = { ...modelSettings };
 
     if (useDefaultPrompt === true) {
@@ -26,7 +27,7 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
           { "role": "system", "content": systemMessage },
           { "role": "user", "content": inputText }
         ],
-        //"max_tokens": maxTokens,
+        "max_tokens": Number(maxTokens),
         "temperature": Number(temperature)
       }),
       muteHttpExceptions: false
@@ -34,7 +35,7 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
 
     const response = UrlFetchApp.fetch(url, options);
     const json = JSON.parse(response.getContentText());
-
+    Logger.log(json);
     if (json.choices[0].finish_reason === 'length') {
       throw new Error('Error in translateTextOpenAI: ' + JSON.stringify(json.usage));
     }

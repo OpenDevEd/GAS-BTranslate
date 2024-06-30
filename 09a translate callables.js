@@ -1,25 +1,12 @@
 // buildMenu, submenu_09_translate_full use the function
 function submenu_09_translate_basic(e) {
   let tryToRetrieveProperties, label;
-  // actionNameDeepLUser = actionNameDeepLDoc = actionNameChatGPTUser = actionNameChatGPTDoc = 'Add/change';
   const TrMenu = DocumentApp.getUi().createMenu('bTranslate');
 
   if (e && e.authMode == ScriptApp.AuthMode.NONE) {
     TrMenu.addItem('Activate menu', 'activateMenu');
     tryToRetrieveProperties = false;
   } else {
-    /* const deeplApiKeyUser = getDeepLAPIkey('user', 'DeepLAPIkey');
-    actionNameDeepLUser = deeplApiKeyUser == null ? 'Add' : 'Change';
-
-    const deeplApiKeyDoc = getDeepLAPIkey('doc', 'DeepLAPIkey');
-    actionNameDeepLDoc = deeplApiKeyDoc == null ? 'Add' : 'Change';
-
-    const chatGPTApiKeyUser = getDeepLAPIkey('user', 'ChatGPTAPIkey');
-    actionNameChatGPTUser = chatGPTApiKeyUser == null ? 'Add' : 'Change';
-
-    const chatGPTApiKeyDoc = getDeepLAPIkey('doc', 'ChatGPTAPIkey');
-    actionNameChatGPTDoc = chatGPTApiKeyDoc == null ? 'Add' : 'Change'; */
-
     tryToRetrieveProperties = true;
   }
 
@@ -39,19 +26,9 @@ function submenu_09_translate_basic(e) {
             } else {
               formality = translationSettings[key].targets[j].form == 'less' ? ' informal' : ' formal';
             }
-            // if (['EN-US', 'EN-GB', 'PT-BR', 'PT-PT'].includes(translationSettings[key].targets[j].deepL)) {
-            //   version = ' ' + translationSettings[key].targets[j].deepL;
-            // } else {
-            //   version = '';
-            // }
             version = chineseEnglishPortugueseVersionHelper(['EN-US', 'EN-GB', 'PT-BR', 'PT-PT'], translationSettings[key].targets[j].deepL);
             translators.push('DeepL' + version + formality);
           } else if (translationSettings[key].targets[j].hasOwnProperty('google')) {
-            // if (['zh-CN', 'zh-TW'].includes(translationSettings[key].targets[j].google)) {
-            //   version = ' ' + translationSettings[key].targets[j].google;
-            // } else {
-            //   version = '';
-            // }
             version = chineseEnglishPortugueseVersionHelper(['zh-CN', 'zh-TW'], translationSettings[key].targets[j].google);
             translators.push('Google' + version);
           } else {
@@ -64,16 +41,6 @@ function submenu_09_translate_basic(e) {
             }
             translators.push(label + version);
           }
-
-          /*if (translationSettings[key].targets[j].hasOwnProperty('openAI')) {
-            if (['PT-BR', 'PT-PT'].includes(translationSettings[key].targets[j].openAI)) {
-              version = ' ' + translationSettings[key].targets[j].openAI;
-            } else {
-              version = '';
-            }
-            translators.push('ChatGPT' + version);
-          }*/
-
         }
 
         // End. List of translators
@@ -119,69 +86,8 @@ function submenu_09_translate_basic(e) {
   TrMenu.addSubMenu(menuFormat);
   // End.Submenu "Format"
 
-
-
-
-
-
-  // const activePreserveFormattingStyle = getPreserveFormattingSettings(tryToRetrieveProperties);
-  // let selectedPreserveFormattingStyleMarker = '';
-  // for (let formatStyle in preserveFormattingStyles) {
-  //   selectedPreserveFormattingStyleMarker = formatStyle === activePreserveFormattingStyle.style ? activePreserveFormattingStyle.marker + ' ' : '';
-  //   TrMenu.addItem(selectedPreserveFormattingStyleMarker + preserveFormattingStyles[formatStyle].menuText, 'preserveFormattingStyles.' + formatStyle + '.run');
-  // }
   TrMenu.addItem('API key management, LLM settings', 'apiKeyManagementSidebar');
   TrMenu.addSeparator();
-
-  /* end of main items */
-
-  /* start submenu 2: Manage DeepL API */
-  /* Note: API key used in 09c */
-  /*
-  const submenu2 = DocumentApp.getUi().createMenu('Manage DeepL API');
-  submenu2.addItem(actionNameDeepLUser + ' DeepL API key for user / all documents', 'enterDeepLAPIkeyUser')
-    .addItem('Remove DeepL API key for user / all documents', 'removeDeepLAPIkeyUser')
-    .addItem('Copy user DeepL API key to document', 'copyUserDeepLApiKeyToDocument')
-    .addItem(actionNameDeepLDoc + ' DeepL API key for document', 'enterDeepLAPIkeyDoc')
-    .addItem('Remove DeepL API key for document', 'removeDeepLAPIkeyDoc')
-    .addSeparator();
-
-  const activeDeeplApiKeySettings = getDeeplApiKeySettings(tryToRetrieveProperties, 'DEEPL');
-
-  for (let settings in deeplApiKeySettings) {
-    selectedSettingsMarker = settings == activeDeeplApiKeySettings.settings ? activeDeeplApiKeySettings.marker + ' ' : '  ';
-    submenu2.addItem(selectedSettingsMarker + deeplApiKeySettings[settings].menuText, 'deeplApiKeySettings.' + settings + '.run');
-  }
-
-  submenu2.addSeparator()
-    .addItem('gdlu get DeepL usage and costs', 'getDeepLUsage');
-*/
-  /* end submenu: Manage DeepL API */
-
-  //TrMenu.addSubMenu(submenu2);
-
-  /* start submenu 3: Manage ChatGPT API */
-  /* Note: API key used in 09e */
-  /* const submenu3 = DocumentApp.getUi().createMenu('Manage ChatGPT API');
-  submenu3.addItem(actionNameChatGPTUser + ' ChatGPT API key for user / all documents', 'enterChatGPTAPIkeyUser')
-    .addItem('Remove ChatGPT API key for user / all documents', 'removeChatGPTAPIkeyUser')
-    .addItem('Copy user ChatGPT API key to document', 'copyUserChatGPTApiKeyToDocument')
-    .addItem(actionNameChatGPTDoc + ' ChatGPT API key for document', 'enterChatGPTAPIkeyDoc')
-    .addItem('Remove ChatGPT API key for document', 'removeChatGPTAPIkeyDoc')
-    .addSeparator();
-
-  const activeChatGPTApiKeySettings = getDeeplApiKeySettings(tryToRetrieveProperties, 'CHATGPT');
-
-  for (let settings in chatGPTApiKeySettings) {
-    selectedSettingsMarker = settings == activeChatGPTApiKeySettings.settings ? activeChatGPTApiKeySettings.marker + ' ' : '  ';
-    submenu3.addItem(selectedSettingsMarker + chatGPTApiKeySettings[settings].menuText, 'chatGPTApiKeySettings.' + settings + '.run');
-  }
-  */
-  /* end submenu: Manage ChatGPT API */
-
-  //TrMenu.addSubMenu(submenu3);
-
-
 
   /* start submenu 1: Utilities */
   TrMenu.addSubMenu(DocumentApp.getUi().createMenu('Utilities')
@@ -190,7 +96,6 @@ function submenu_09_translate_basic(e) {
     .addItem('spp split off selected text, then paras [select text]', 'splitOffSelectedText_thenSplitParas')
     .addItem('mps merge sentences to paragraphs [select paragraphs] stp', 'mergeParasInDocumentB')
     .addItem('htse highlight translation start/end', 'highlightTranslationStartEnd')
-    //.addItem('trclt delete all translated text 《...》', 'clearTranslatedText')
     .addItem('trclm clear all translation markers 《...》', 'leaveOriginalAndTranslation')
     .addItem('trclmo clear all translation markers 《...》 and original text', 'leaveOnlyTranslation')
   );
@@ -240,97 +145,12 @@ function exampleTranslationSettingsDeepL() {
   onOpen();
 }
 
-// out-of-use
-function submenu_09_translate_full() {
-  return submenu_09_translate_basic()
-    .addSeparator()
-    .addItem('trr translate selection and replace', 'translateSelectionAndReplace')
-    .addItem('trclear delete all translated text 《...》', 'clearTranslatedText')
-    .addSeparator()
-    .addItem('NOT WORKING trset1 set langauge 1', 'translateSelectionAndAppend')
-    .addItem('NOT WORKING trset2 set langauge 2', 'translateSelectionAndAppend')
-    .addSeparator()
-    //  .addItem('whoami ', 'whoami')              
-    ;
-};
-
 const htmlColourNames = { "orange": "#FFA500" };
 
 // translateSelectionAndAppendL uses the function
 function highlightTranslationStartEnd() {
   setBothTextColors("《translation(START|END)S》", "#000000", htmlColourNames["orange"]);
   setBothTextColors("《(\\!\\!\\!|\\+)》", htmlColourNames["orange"], "#444444");
-};
-
-// submenu_09_translate_full (out-of-use) adds menu item 'trr translate selection and replace'
-function translateSelectionAndReplace() {
-  // This requires a selection
-  translateSelectedTextAndReplace();
-};
-
-// out-of-use
-function translateSelectionAndAppend() {
-  translateSelectionAndAppend12();
-};
-
-// out-of-use
-function translateSelectionAndAppendReverse() {
-  translateSelectionAndAppend21()
-};
-
-// Menu item 'tra12 translate selection and append ('+lang1+'->'+lang2+')' (out-of-use)
-function translateSelectionAndAppend12() {
-  translateSelectionAndAppendL(lang1, lang2);
-};
-
-// Menu item 'tra21 translate selection and append ('+lang2+'->'+lang1+')' (out-of-use)
-function translateSelectionAndAppend21() {
-  translateSelectionAndAppendL(lang2, lang1);
-};
-
-// Menu item (out-of-use)
-function translateSelectionAndAppend13() {
-  translateSelectionAndAppendL(lang1, lang3);
-};
-
-// Menu item (out-of-use)
-function translateSelectionAndAppend31() {
-  translateSelectionAndAppendL(lang3, lang1);
-};
-
-// Menu item (out-of-use)
-function translateSelectionAndAppend14() {
-  translateSelectionAndAppendL(lang1, lang4);
-};
-
-// Menu item (out-of-use)
-function translateSelectionAndAppend41() {
-  translateSelectionAndAppendL(lang4, lang1);
-};
-
-// Menu item (commented out) (out-of-use)
-function translateSelectionAndAppend15() {
-  translateSelectionAndAppendL(lang1, lang5);
-};
-
-// Menu item (commented out) (out-of-use)
-function translateSelectionAndAppend51() {
-  translateSelectionAndAppendL(lang5, lang1);
-};
-
-// Menu item (commented out) (out-of-use)
-function translateSelectionAndAppend16() {
-  translateSelectionAndAppendL(lang1, lang6);
-};
-
-// Menu item (commented out) (out-of-use)
-function translateSelectionAndAppend61() {
-  translateSelectionAndAppendL(lang6, lang1);
-};
-
-// submenu_09_translate_full (out-of-use) adds menu item 'trclear delete all translated text 《...》'
-function clearTranslatedText() {
-  singleReplace("《translationOf: [^《》]*?》", "", true, false, null);
 };
 
 function leaveOnlyTranslation() {
@@ -344,29 +164,6 @@ function leaveOriginalAndTranslation() {
   singleReplace("》", "", true, false, null);
   singleReplace("《.*?reverse-translated: ", "", true, false, null);
 };
-
-// translateSelectionAndReplace (out-of-use) uses the function
-function translateSelectedTextAndReplace() {
-  // This requires a selection
-  var text = getTextAndTranslation("en", "de", true);
-  insertText(text.translation);
-};
-
-
-// More than one!!! 09d translate-Google
-// translateSelectedTextAndReplace (out-of-use) uses the function
-function getTextAndTranslation(origin, dest, savePrefs) {
-  if (savePrefs) {
-    PropertiesService.getUserProperties()
-      .setProperty('originLang', origin)
-      .setProperty('destLang', dest);
-  }
-  var text = getSelectedText().join('\n');
-  return {
-    text: text,
-    translation: translateText(text, origin, dest)
-  };
-}
 
 function translationSettingsSidebar() {
   const translationSettings = getTranslationSettings();

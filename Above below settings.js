@@ -3,6 +3,7 @@ function clearAboveBelowSettings() {
   userProperties.deleteProperty('ABOVE_BELOW_SETTINGS');
   onOpen();
 }
+
 function testAboveBelowSettings() {
   Logger.log(PropertiesService.getUserProperties().getProperty('ABOVE_BELOW_SETTINGS'));
 }

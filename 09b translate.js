@@ -37,7 +37,7 @@ function getApiKey(translator) {
   let deeplApiKeyUser = getDeepLAPIkey('user', propertyApiKeyName);
   let deeplApiKeyDoc = getDeepLAPIkey('doc', propertyApiKeyName);
 
-  let useDeeplApiKeyUser, useDeeplApiKeyDoc, confirmationResult, selectedStorage, keyResult;
+  let confirmationResult, selectedStorage, keyResult;
   // Always ask
   if (activeDeeplApiKeySettings == 'ask') {
     if (deeplApiKeyUser != null && deeplApiKeyDoc != null) {
@@ -224,6 +224,7 @@ function translateSelectionAndAppendL(settings) {
       // This will use the selection or the paragraph.
       const p = getParagraphs(true);
       if (p) {
+        let realParagraphQuantity = 0;
         for (let i = 0; i < p.length; i++) {
           let reverseTranslationFlag = false;
           translationsArray = [];
@@ -235,6 +236,7 @@ function translateSelectionAndAppendL(settings) {
             const elementTextWithoutHtml = elementText;
             // This check is necessary to exclude images, which return a blank text element.
             if (elementText.length > 0) {
+              realParagraphQuantity++;
               // Preserve formatting
               if (preserveFormatting === true) {
                 elementText = convertToHtml(element, elementText);
@@ -252,122 +254,7 @@ function translateSelectionAndAppendL(settings) {
               }
 
               callAllTranslators(translationsArray, translationsToInsert, elementText, elementTextWithoutHtml, deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, ltrLangReverse, preserveFormatting, appendReverseTranslation, reverseTranslationFlag);
-              /*
-                            // translate using OpenAI API and insert
-                            for (let j in openAIArray) {
-                              //Logger.log('%s %s %s', elementText, openAIArray[j].origin, openAIArray[j].dest);
-                              function localOpenAI(elementText, origin, dest, reverseTranslated) {
-                                let reverseTranslatedMark = '';
-                                let lastSymbolLinkText = '》';
-                                let localLtr = ltrLang;
-                                let out = translateTextOpenAI(elementText, origin, dest, chatGPTApiKey, openAIArray[j].settings, preserveFormatting);
-                                if (reverseTranslated === true) {
-                                  out.message += '》';
-                                  reverseTranslatedMark = ' reverse-translated';
-                                  lastSymbolLinkText = ':';
-                                  localLtr = ltrLangReverse;
-                                }
-                                const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
-                                const openAILinkText = '《' + trName + ":" + dest + reverseTranslatedMark + lastSymbolLinkText;
-                                const openAIURL = 'https://chat.openai.com/';
-                                collectTranslations(translationsArray, translationsToInsert, out.message, openAILinkText, openAIURL, reverseTranslated, localLtr);
-                                return out;
-                              }
-                              const out = localOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, false);
-                              if (appendReverseTranslation === true && reverseTranslationFlag === false && out.status === 'ok') {
-                                localOpenAI(out.message, openAIArray[j].dest, openAIArray[j].origin, true);
-                              }
-                            }
-              
-                            // translate using Anthropic API and insert
-                            for (let j in anthropicArray) {
-                              //Logger.log('%s %s %s', elementText, anthropicArray[j].origin, anthropicArray[j].dest);
-                              function localAnthropic(elementText, origin, dest, reverseTranslated) {
-                                let reverseTranslatedMark = '';
-                                let lastSymbolLinkText = '》';
-                                let localLtr = ltrLang;
-                                let out = translateTextAnthropic(elementText, origin, dest, anthropicApiKey, anthropicArray[j].settings, preserveFormatting);
-                                if (reverseTranslated === true) {
-                                  out.message += '》';
-                                  reverseTranslatedMark = ' reverse-translated';
-                                  lastSymbolLinkText = ':';
-                                  localLtr = ltrLangReverse;
-                                }
-                                const trName = anthropicArray[j].settings.name;
-                                const anthropicLinkText = "《" + trName + ":" + dest + reverseTranslatedMark + lastSymbolLinkText;
-                                const anthropicURL = 'https://claude.ai/chats';
-                                collectTranslations(translationsArray, translationsToInsert, out.message, anthropicLinkText, anthropicURL, reverseTranslated, localLtr);
-                                return out;
-                              }
-                              const out = localAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, false);
-                              if (appendReverseTranslation === true && reverseTranslationFlag === false && out.status === 'ok') {
-                                localAnthropic(out.message, anthropicArray[j].dest, anthropicArray[j].origin, true);
-                              }
-                            }
-              
-                            // translate using Google Translate and insert
-                            for (let j in googleArray) {
-                              function localGoogle(elementText, origin, dest, reverseTranslated, elementTextWithoutHtml) {
-                                //Logger.log('%s %s %s %s %s', elementText, origin, dest, reverseTranslated, elementTextWithoutHtml);
-                                let reverseTranslatedMark = '';
-                                let lastSymbolLinkText = '》';
-                                let localLtr = ltrLang;
-                                let out = translateText(elementText, origin, dest);
-                                if (reverseTranslated === true) {
-                                  out.message += '》';
-                                  reverseTranslatedMark = ' reverse-translated';
-                                  lastSymbolLinkText = ':';
-                                  localLtr = ltrLangReverse;
-                                }
-                                const glinkText = "《G:" + dest + reverseTranslatedMark + lastSymbolLinkText;
-                                const gtrURL = getgtrURL(elementTextWithoutHtml, origin, dest);
-                                collectTranslations(translationsArray, translationsToInsert, out.message, glinkText, gtrURL, reverseTranslated, localLtr);
-                                return out;
-                              }
-                              const out = localGoogle(elementText, googleArray[j].origin, googleArray[j].dest, false, elementTextWithoutHtml);
-                              if (appendReverseTranslation === true && reverseTranslationFlag === false && out.status === 'ok') {
-                                const cleanedString = out.message.replace(/<\/?[^>]+(>|$)/g, "");
-                                localGoogle(out.message, googleArray[j].dest, googleArray[j].origin, true, cleanedString);
-                              }
-                            }
-              
-                            // translate using DeepL and insert    
-                            for (let j = 0; j < deepLArray.length; j++) {
-                              function localDeepL(elementText, origin, dest, formality, reverseTranslated, elementTextWithoutHtml) {
-                                let reverseTranslatedMark = '';
-                                let lastSymbolLinkText = '》';
-                                let localLtr = ltrLang;
-                                let out = translateTextDeepL(elementText, origin, dest, formality, deepLApiKey, preserveFormatting);
-                                if (reverseTranslated === true) {
-                                  out.message += '》';
-                                  reverseTranslatedMark = ' reverse-translated';
-                                  lastSymbolLinkText = ':';
-                                  localLtr = ltrLangReverse;
-                                }
-                                if (formality == 'default') {
-                                  formality = '';
-                                } else {
-                                  formality = formality == 'less' ? ' informal' : ' formal';
-                                }
-                                const dLlinkText = '《D:' + dest + formality + reverseTranslatedMark + lastSymbolLinkText;
-                                const DeepLURL = getDeepLURL(elementTextWithoutHtml, origin, dest);
-                                collectTranslations(translationsArray, translationsToInsert, out.message, dLlinkText, DeepLURL, reverseTranslated, localLtr);
-                                return out;
-                              }
-                              const out = localDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, false, elementTextWithoutHtml);
-                              if (appendReverseTranslation === true && reverseTranslationFlag === false && out.status === 'ok') {
-                                const cleanedString = out.message.replace(/<\/?[^>]+(>|$)/g, "");
-                                let reverseTranslationOrig = deepLArray[j].dest;
-                                if (['PT-BR', 'PT-PT'].includes(deepLArray[j].dest)) {
-                                  reverseTranslationOrig = 'PT';
-                                } else if (['EN-GB', 'EN-US'].includes(deepLArray[j].dest)) {
-                                  reverseTranslationOrig = 'EN';
-                                }
-                                localDeepL(out.message, reverseTranslationOrig, deepLArray[j].origin, 'default', true, cleanedString);
-                              }
-                            }
-              */
-              //Logger.log(translationsToInsert);
+
               const style = element.editAsText().getAttributes();
               for (let m = 0; m < translationsToInsert.length; m++) {
                 const newPara = insertTranslations(translationsToInsert[m], parent, style, parPosition, ltrLang, preserveFormatting);
@@ -409,18 +296,21 @@ function translateSelectionAndAppendL(settings) {
             }
           } else {
             alert('could not edit para');
-          };
-        };
-        // Insert boundaryStart, boundaryEnd
-        if (needToInsertBoundaryStart) {
-          startParent.insertParagraph(startParPos, boundaryStart).setAttributes(styleBoundary);
+          }
         }
-        if (needToInsertBoundaryEnd) {
-          const endParPos = endParent.getChildIndex(lastParagraphBeforeBoundaryEnd) + 1;
-          endParent.insertParagraph(endParPos, boundaryEnd).setAttributes(styleBoundary)
-            .appendText(' ').setAttributes(styleNull);
+
+        if (realParagraphQuantity > 0) {
+          // Insert boundaryStart, boundaryEnd
+          if (needToInsertBoundaryStart) {
+            startParent.insertParagraph(startParPos, boundaryStart).setAttributes(styleBoundary);
+          }
+          if (needToInsertBoundaryEnd) {
+            const endParPos = endParent.getChildIndex(lastParagraphBeforeBoundaryEnd) + 1;
+            endParent.insertParagraph(endParPos, boundaryEnd).setAttributes(styleBoundary)
+              .appendText(' ').setAttributes(styleNull);
+          }
+          // End. Insert boundaryStart, boundaryEnd
         }
-        // End. Insert boundaryStart, boundaryEnd
       } else {
         alert('could not get para');
       };
@@ -445,6 +335,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
 
   const p = getParagraphs(true);
   if (p) {
+    let realParagraphQuantity = 0;
     for (let i = 0; i < p.length; i++) {
       let reverseTranslationFlag = false;
       mainTranslationAdded = false;
@@ -457,6 +348,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
         elementTextWithoutHtml = elementText;
         // This check is necessary to exclude images, which return a blank text element.
         if (elementText.length > 0) {
+          realParagraphQuantity++;
           offset = 0; // offset=0 means new text is inserted before. offset=1 means new text is inserted after original
           parent = element.getParent();
           parPosition = parent.getChildIndex(element) + offset;
@@ -467,56 +359,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
 
           callAllTranslators(translationsArray, translationsToInsert, elementText, elementTextWithoutHtml, deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, ltrLangReverse, preserveFormatting, appendReverseTranslation, reverseTranslationFlag);
 
-          /*
-          // Translates using DeepL
-          for (let j = 0; j < deepLArray.length; j++) {
-            out = translateTextDeepL(elementText, deepLArray[j].origin, deepLArray[j].dest, deepLArray[j].formality, deepLApiKey, preserveFormatting);
-            if (deepLArray[j].formality == 'default') {
-              formality = '';
-            } else {
-              formality = deepLArray[j].formality == 'less' ? ' informal' : ' formal';
-            }
-            linkText = "《D:" + deepLArray[j].dest + formality + "》";
-            linkUrl = getDeepLURL(elementTextWithoutHtml, deepLArray[j].origin, deepLArray[j].dest);
-            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl, false, ltrLang);
-          }
-          // End. Translates using DeepL
-
-          // Translates using Google Translate
-          for (let j in googleArray) {
-            out = translateText(elementText, googleArray[j].origin, googleArray[j].dest);
-
-            linkText = "《G:" + googleArray[j].dest + "》";
-            linkUrl = getgtrURL(elementTextWithoutHtml, googleArray[j].origin, googleArray[j].dest);
-            collectTranslations(translationsArray, translationsToInsert, out, linkText, linkUrl, false, ltrLang);
-          }
-          // End. Translates using Google Translate
-
-          // Translate using OpenAI API
-          for (let j in openAIArray) {
-            //out = translateTextOpenAI(elementText, openAIArray[j].dest, chatGPTApiKey);
-            out = translateTextOpenAI(elementText, openAIArray[j].origin, openAIArray[j].dest, chatGPTApiKey, openAIArray[j].settings, preserveFormatting);
-            //const openAILinkText = "《GPT:" + openAIArray[j].dest + "》";
-            const trName = openAIArray[j].settings.name === 'openAI' ? LEGACY_OPENAI : openAIArray[j].settings.name;
-            const openAILinkText = "《" + trName + ":" + openAIArray[j].dest + "》";
-            const openAIURL = 'https://chat.openai.com/';
-            collectTranslations(translationsArray, translationsToInsert, out, openAILinkText, openAIURL, false, ltrLang);
-          }
-          // End. Translate using OpenAI API
-
-          // translate using Anthropic API and insert
-          for (let j in anthropicArray) {
-            const out = translateTextAnthropic(elementText, anthropicArray[j].origin, anthropicArray[j].dest, anthropicApiKey, anthropicArray[j].settings, preserveFormatting);
-            const trName = anthropicArray[j].settings.name;
-            const anthropicLinkText = "《" + trName + ":" + anthropicArray[j].dest + "》";
-            const anthropicURL = 'https://claude.ai/chats';
-            collectTranslations(translationsArray, translationsToInsert, out, anthropicLinkText, anthropicURL, false, ltrLang);
-          }
-*/
-          // rangeName = insertMainTranslation(doc, style, parent, parPosition, elementText, translationsToInsert[0], namedRanges, footnotesInfo);
-
           // Inserts the main translation
-          //newPara = insertTranslations(translationsToInsert[0], parent, style, parPosition, ltrLang, preserveFormatting);
           newPara = insertTranslations(translationsToInsert[translationsToInsert.length - 1], parent, style, parPosition, ltrLang, preserveFormatting);
           rangeName = markFootnotePlace(doc, newPara, namedRanges, footnotesInfo);
           footnotesInfo[rangeName].elementText = elementTextWithoutHtml;
@@ -525,10 +368,9 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
 
 
           // for (let m = 1; m < translationsToInsert.length; m++) {
-          for (let m = translationsToInsert.length - 2; m >=0; m--) {
+          for (let m = translationsToInsert.length - 2; m >= 0; m--) {
             linkUrl = translationsToInsert[m].translators[0].url;
             linkText = translationsToInsert[m].translators[0].linkText;
-            //footnotesInfo[rangeName].tr.push({ out: translationsToInsert[m].out, linkText: linkText, url: linkUrl });
             footnotesInfo[rangeName].tr.push(translationsToInsert[m]);
           }
 
@@ -565,22 +407,23 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
           if (i == 0) {
             element.editAsText().insertText(0, '《translationSTARTS》');
           }
-          if (p.length - 1 == i) {
+          if (p.length - 1 == i && realParagraphQuantity > 0) {
             parent.insertParagraph(parPosition + 2, '《translationENDS》');
           }
         }
       } else {
         alert('could not edit para');
-      };
+      }
+    }
+    if (realParagraphQuantity === 0) {
+      return 0;
     }
     highlightTranslationStartEnd();
   } else {
     alert('could not get para');
-  };
+  }
 
   doc.saveAndClose();
-
-  //Logger.log(translationsToInsert);
 
   let document = Docs.Documents.get(documentId);
   let startIndex, endIndex;
@@ -687,9 +530,6 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
     footnoteText = '';
     linksHelper = [];
 
-
-    //Logger.log(footnotesInfo);
-
     // Concatenates all translations of the footnote
     for (let i in footnotesInfo[rangeName].tr) {
 
@@ -702,21 +542,7 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
         startEndArray[startEndArray.length - 1]['end'] = translatorsLinks.length - 2;
       }
 
-
-      //dLlinkText = footnotesInfo[rangeName].tr[i].linkText;
-      //linksHelper.push({ startIndex: footnoteText.length, endIndex: footnoteText.length + dLlinkText.length, url: footnotesInfo[rangeName].tr[i].url });
-
-      //footnoteText += translatorsLinks + ' ' + footnotesInfo[rangeName].tr[i].out + '\n';
-
-      // if (preserveFormatting === true) {
-      //   Logger.log(footnotesInfo[rangeName].tr[i].out);
-      //   const { stylesArray, textString } = htmlToStyle(footnotesInfo[rangeName].tr[i].out);
-      //   textToInsert = translatorsLinks + textString;
-      //   allStylesArray = stylesArray;
-      //   Logger.log(stylesArray);
-      // } else {
       textToInsert = translatorsLinks + footnotesInfo[rangeName].tr[i].out;
-      //}
       footnoteText += textToInsert + '\n';
     }
     // End. Concatenates all translations of the footnote
@@ -729,8 +555,6 @@ function appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, d
       const { stylesArray, textString } = htmlToStyle(footnoteText);
       stylesArrayFootnoteText = stylesArray;
       textStringFootnoteText = textString;
-      // Logger.log(textStringFootnoteText);
-      // Logger.log(stylesArrayFootnoteText);
     } else {
       textStringFootnoteText = footnoteText;
     }
@@ -1007,7 +831,6 @@ function insertTranslations(translationToInsert, parent, style, parPosition, ltr
   newPara = parent.insertParagraph(parPosition, textToInsert);
   newPara.editAsText().setAttributes(style);
 
-  //Logger.log(allStylesArray);
   const translatorsLinksLength = translatorsLinks.length;
 
   if (preserveFormatting === true) {
@@ -1031,7 +854,7 @@ function insertTranslations(translationToInsert, parent, style, parPosition, ltr
     newPara.editAsText().setLinkUrl(startEndArray[l].start, startEndArray[l].end, startEndArray[l].url);
     newPara.editAsText().setUnderline(startEndArray[l].start, startEndArray[l].end, false);
   }
-  // newPara.setLeftToRight(ltrLang);
+
   newPara.setLeftToRight(translationToInsert.ltrLang);
   return newPara;
 }
@@ -1044,7 +867,6 @@ function checkLtr(targetLang) {
   }
 }
 
-
 function convertToHtml(element, elementText) {
   const htmlTextArray = [];
 
@@ -1053,18 +875,17 @@ function convertToHtml(element, elementText) {
 
     const paragraphText = element.getChild(j);
     const indices = paragraphText.getTextAttributeIndices();
-    // Logger.log('indices=' + indices);
 
     for (let k = 0; k < indices.length; k++) {
       const partAttributes = paragraphText.getAttributes(indices[k]);
-      // Logger.log(partAttributes);
+
       if (k === indices.length - 1) {
         end = elementText.length;
       } else {
         end = indices[k + 1];
       }
       let pieceOfText = elementText.slice(indices[k], end);
-      // Logger.log('pieceOfText=' + pieceOfText);
+
       if (partAttributes.LINK_URL) {
         pieceOfText = `<a href=${partAttributes.LINK_URL}>${pieceOfText}</a>`;
       }
@@ -1074,12 +895,11 @@ function convertToHtml(element, elementText) {
       if (partAttributes.ITALIC) {
         pieceOfText = `<i>${pieceOfText}</i>`;
       }
+
       htmlTextArray.push(pieceOfText);
     }
   }
 
   elementText = htmlTextArray.join('');
-  // Logger.log(elementText);
   return elementText;
-
 }
