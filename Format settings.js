@@ -47,6 +47,10 @@ const formatStyles = {
     "menuText": "Format: First translation in text, others in footnote",
     "run": function () { activateFormatStyle(this); }
   },
+  "table": {
+    "menuText": "Format: Original text and translation(s) in table",
+    "run": function () { activateFormatStyle(this); }
+  },
   /* "comments": {
      "menuText": "Format: Primary language in text, rest in comment (links are preserved)",
      "run": function () { activateFormatStyle(this); }

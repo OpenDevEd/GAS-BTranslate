@@ -191,6 +191,8 @@ function translateSelectionAndAppendL(settings) {
 
     if (format.style == 'footnotes') {
       appendFootnotes(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, ltrLangReverse, preserveFormatting, appendReverseTranslation);
+    } else if (format.style == 'table') {
+      insertTranslationTable(deepLArray, googleArray, openAIArray, anthropicArray, deepLApiKey, chatGPTApiKey, anthropicApiKey, ltrLang, ltrLangReverse, preserveFormatting, appendReverseTranslation);
     } else if (format.style == 'txt') {
 
       const aboveBelow = getSettings(true, 'above', aboveBelowStyles, 'ABOVE_BELOW_SETTINGS');
