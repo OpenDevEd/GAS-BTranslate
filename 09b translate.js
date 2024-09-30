@@ -10,9 +10,9 @@ const LEGACY_OPENAI_MODEL = {
 };
 
 const DEFAULT_OPENAI_MODEL = {
-  "model": "gpt-4o",
+  "model": "gpt-4o-2024-08-06",
   "temperature": 0,
-  "maxTokens": 4096,
+  "maxTokens": 16383,
   "customPrompt": 'Translate from <S> to <T>. Return only translation.',
   "name": "GPT-4o",
   "useDefaultPrompt": false
@@ -21,7 +21,7 @@ const DEFAULT_OPENAI_MODEL = {
 const DEFAULT_ANTHROPIC_MODEL = {
   "model": "claude-3-5-sonnet-20240620",
   "temperature": 0,
-  "maxTokens": 4000,
+  "maxTokens": 8192,
   "customPrompt": 'Translate from <S> to <T>. Return only translation.',
   "name": "SONNET-3-5",
   "useDefaultPrompt": false

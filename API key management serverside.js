@@ -156,17 +156,17 @@ function allProviders() {
 
 const settings = {
   Anthropic: {
-    arrayAllModels: ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"],
+    arrayAllModels: ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229", "claude-3-haiku-20240307"],
     maxTokens: { min: 0, max: 4000, step: 1 },
-    maxTokensForModel: [4000, 4000, 4000, 4000],
+    maxTokensForModel: [8192, 4096, 4096],
     temperature: { min: 0, max: 1, step: 0.1 },
     useDefaultPrompt: true,
     defaultPrompt: 'Translate from <S> to <T>. Return only translation.'
   },
   OpenAI: {
-    arrayAllModels: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"],
+    arrayAllModels: ["gpt-4o-2024-08-06", "gpt-4o", "gpt-4o-mini"],
     maxTokens: { min: 0, max: 4036, step: 1 },
-    maxTokensForModel: [4095, 16383, 4095, 4095, 16384],
+    maxTokensForModel: [16383, 4095, 16383],
     temperature: { min: 0, max: 2, step: 0.01 },
     useDefaultPrompt: true,
     defaultPrompt: 'Translate from <S> to <T>. Return only translation.'

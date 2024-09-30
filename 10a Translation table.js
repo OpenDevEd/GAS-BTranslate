@@ -138,8 +138,8 @@ function insertTranslationTable(deepLArray, googleArray, openAIArray, anthropicA
       const addedTextsArray = [];
 
       tableHeaderArray.forEach(el => {
-        let trObjEl = trObj[el].out;
-        let ltrLang = trObj[el].ltrLang;
+        let trObjEl = trObj[el] == null? '-' :trObj[el].out;
+        let ltrLang = trObj[el] == null? true :trObj[el].ltrLang;
         if (preserveFormatting === true) {
           if (appendReverseTranslation) trObjEl = removeLastSymbolIfArrow(trObjEl);
           const { stylesArray, textString } = htmlToStyle(trObjEl);
