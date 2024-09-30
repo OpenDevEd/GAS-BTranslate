@@ -27,7 +27,7 @@ function getTranslationSettings() {
     }
   }
   catch (error) {
-    Logger.log('Needs to activate!!!');
+    // Logger.log('Needs to activate!!!');
   }
   //Logger.log(JSON.stringify(resultObj));
   return resultObj;

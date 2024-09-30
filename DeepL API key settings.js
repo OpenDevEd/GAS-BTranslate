@@ -65,7 +65,7 @@ function getDeeplApiKeySettings(tryToRetrieveProperties, translator) {
       }
     }
     catch (error) {
-      Logger.log('Needs to activate!!! ' + error);
+      // Logger.log('Needs to activate!!! ' + error);
     }
   }
   return resultObj;

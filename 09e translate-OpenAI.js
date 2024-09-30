@@ -35,7 +35,7 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
 
     const response = UrlFetchApp.fetch(url, options);
     const json = JSON.parse(response.getContentText());
-    Logger.log(json);
+    // Logger.log(json);
     if (json.choices[0].finish_reason === 'length') {
       throw new Error('Error in translateTextOpenAI: ' + JSON.stringify(json.usage));
     }

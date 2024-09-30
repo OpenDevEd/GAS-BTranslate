@@ -243,9 +243,10 @@ function formTableHeader(deepLArray, googleArray, openAIArray, anthropicArray, a
     }
   });
   openAIArray.forEach(element => {
-    tableHeaderArray.push('《' + element.settings.name + ':' + element.dest + '》');
+    const trName = element.settings.name === 'openAI' ? LEGACY_OPENAI : element.settings.name;
+    tableHeaderArray.push('《' + trName + ':' + element.dest + '》');
     if (appendReverseTranslation) {
-      tableHeaderArray.push('《' + element.settings.name + ':' + element.origin + ' reverse-translated:');
+      tableHeaderArray.push('《' + trName + ':' + element.origin + ' reverse-translated:');
     }
   });
   anthropicArray.forEach(element => {
