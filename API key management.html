@@ -597,6 +597,7 @@
           this.Settings.maxTokens.max = newMaxTokens;
           if (oldMaxTokens > newMaxTokens){
             this.newTranslator.maxTokens = newMaxTokens;
+            this.maxTokens = newMaxTokens;
           }
     },
 
