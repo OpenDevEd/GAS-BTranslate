@@ -10,7 +10,7 @@ function enterDeepLAPIkey(storage, translator) {
   }
   apiKey = apiKey.trim();
   if (apiKey != '') {
-    const result = translatorName === 'DeepL' ? testDeeplKey(apiKey) : testChatGPTKey(apiKey);
+    const result = PROPERTY_NAMES[translatorName].testKey(apiKey);
     if (result.status == 'ok') {
       if (storage == 'user') {
         properties = PropertiesService.getUserProperties();

@@ -156,7 +156,7 @@ function translateSelectionAndAppendL(settings) {
     // Translation settings contain DeepL
     let deepLApiKey;
     if (deepLArray.length > 0) {
-      const deepLKeyResult = getApiKey('DEEPL');
+      const deepLKeyResult = getApiKey('DeepL');
       if (deepLKeyResult.status !== 'ok') return 0;
       deepLApiKey = deepLKeyResult.apiKey;
     }
@@ -165,7 +165,7 @@ function translateSelectionAndAppendL(settings) {
     // Translation settings contain ChatGPT
     let chatGPTApiKey;
     if (openAIArray.length > 0) {
-      const chatGPTKeyResult = getApiKey('CHATGPT');
+      const chatGPTKeyResult = getApiKey('OpenAI');
       if (chatGPTKeyResult.status !== 'ok') return 0;
       chatGPTApiKey = chatGPTKeyResult.apiKey;
     }
