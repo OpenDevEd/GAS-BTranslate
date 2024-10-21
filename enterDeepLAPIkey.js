@@ -43,7 +43,7 @@ function enterAPIkey(provider, storage, apiKey) {
       properties.setProperty(propertyName, apiKey);
       return { status: 'ok' };
     } else {
-      return { status: 'error', message: `The ${provider} API key doesn't work.` };
+      return { status: 'error', message: `The ${provider} API key doesn't work. ` + testResult.message };
     }
   }
   return { status: 'error', message: `Something went wrongt. The ${provider} API key wasn't saved.` };
