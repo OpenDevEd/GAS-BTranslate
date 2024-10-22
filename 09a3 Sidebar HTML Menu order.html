@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu order sidebar</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuedraggable@2.24.3/dist/vuedraggable.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Ubuntu&display=swap');
+    
+    body {
+      font-family: 'Ubuntu', sans-serif;
+      color: #333333;
+      margin: 16px;
+    }
+
+    .draggable-item {
+      padding: 8px;
+      margin: 4px 0;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: move;
+    }
+
+    .draggable-item.last-item {
+      cursor: not-allowed;
+    }
+
+    .draggable-item:hover {
+      background: #e9e9e9;
+    }
+
+    .bin-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 8px;
+    }
+
+    .bin-button:hover {
+      opacity: 0.7;
+    }
+
+    .bin-button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .save-button {
+      width: 100%;
+      padding: 8px;
+      margin: 16px 0;
+      background-color: #E68225;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .save-button:hover {
+      background-color: #D67215;
+    }
+
+    .save-button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .binned-section {
+      margin-top: 16px;
+      padding: 16px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      border: 1px dashed #ccc;
+    }
+
+    .binned-title {
+      margin-bottom: 8px;
+      color: #666;
+    }
+
+    .success-message {
+      padding: 8px;
+      background-color: #dff0d8;
+      color: #3c763d;
+      border-radius: 4px;
+      margin: 8px 0;
+    }
+
+    .error-message {
+      padding: 8px;
+      background-color: #f2dede;
+      color: #a94442;
+      border-radius: 4px;
+      margin: 8px 0;
+    }
+
+    .disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .drag-handle {
+      cursor: move;
+      padding: 4px;
+      margin-right: 8px;
+      color: #666;
+    }
+
+    .last-item .drag-handle {
+      cursor: not-allowed;
+      opacity: 0.3;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div :class="{ disabled: isProcessing }">
+      <!-- Active items -->
+      <draggable 
+        v-model="activeItems" 
+        group="items" 
+        @change="updateOrder"
+        :options="{
+          animation: 150,
+          ghostClass: 'ghost',
+          handle: '.drag-handle',
+          onMove: checkMove
+        }"
+      >
+        <div 
+          v-for="(item, index) in activeItems" 
+          :key="index" 
+          class="draggable-item"
+          :class="{ 'last-item': isLastActiveItem }"
+        >
+          <div style="display: flex; align-items: center;">
+            <span class="drag-handle" :style="{ opacity: isLastActiveItem ? 0.3 : 1 }">⋮⋮</span>
+            <span>{{ item }}</span>
+          </div>
+          <button 
+            class="bin-button" 
+            @click="moveToBin(index)"
+            :disabled="isLastActiveItem">
+            🗑️
+          </button>
+        </div>
+      </draggable>
+
+      <!-- Save button -->
+      <button 
+        class="save-button" 
+        @click="saveOrder" 
+        :disabled="!isOrderChanged || isProcessing">
+        Save
+      </button>
+
+      <!-- Messages -->
+      <div v-if="message" :class="messageType === 'success' ? 'success-message' : 'error-message'">
+        {{ message }}
+      </div>
+
+      <!-- Binned items section -->
+      <div class="binned-section">
+        <h3 class="binned-title">Binned items</h3>
+        <draggable 
+          v-model="binnedItems" 
+          group="items" 
+          @change="updateOrder"
+          :options="{
+            animation: 150,
+            ghostClass: 'ghost',
+            handle: '.drag-handle'
+          }"
+        >
+          <div v-for="(item, index) in binnedItems" :key="index" class="draggable-item">
+            <div style="display: flex; align-items: center;">
+              <span class="drag-handle">⋮⋮</span>
+              <span>{{ item }}</span>
+            </div>
+          </div>
+        </draggable>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const LEGACY_OPENAI = 'GPT3.5-TURBO';
+    new Vue({
+      el: '#app',
+      data: {
+        isProcessing: false,
+        message: '',
+        messageType: '',
+        activeItems: [],
+        binnedItems: [],
+        originalOrder: [],
+        translationSettings: <?!= getTranslationSettingsJson(); ?>
+      },
+      computed: {
+        isOrderChanged() {
+          const currentOrder = [...this.activeItems];
+          return JSON.stringify(currentOrder) !== JSON.stringify(this.originalOrder);
+        },
+        isLastActiveItem() {
+          return this.activeItems.length === 1;
+        }
+      },
+      methods: {
+        initializeItems() {
+          const menuElArray = this.listTrSettings(this.translationSettings);
+          this.activeItems = [...menuElArray];
+          this.originalOrder = [...menuElArray];
+          this.binnedItems = [];
+        },
+        moveToBin(index) {
+          if (this.activeItems.length > 1) {
+            const item = this.activeItems.splice(index, 1)[0];
+            this.binnedItems.push(item);
+            this.updateOrder();
+          }
+        },
+        checkMove(evt) {
+          // Prevent moving if it's the last item in active items
+          if (this.isLastActiveItem && evt.dragged.parentNode === evt.from) {
+            return false;
+          }
+          return true;
+        },
+        updateOrder() {
+          // This method is called whenever the order changes
+          // The new order is already reflected in activeItems
+        },
+        saveOrder() {
+          this.isProcessing = true;
+          const newMenuOrder = this.activeItems.map(item => {
+            // Extract the original key from the display name
+            return this.translationSettings.menuOrder[this.originalOrder.indexOf(item)];
+          });
+
+          const binnedItems =  this.binnedItems.map(item => {
+            return this.translationSettings.menuOrder[this.originalOrder.indexOf(item)];
+          });
+          google.script.run
+            .withSuccessHandler(this.handleSaveSuccess)
+            .withFailureHandler(this.handleSaveError)
+            .setNewMenuOrderServerside(newMenuOrder, binnedItems);
+        },
+        handleSaveSuccess(result) {
+          this.isProcessing = false;
+          this.message = result.message || 'Order saved successfully';
+          this.messageType = 'success';
+          this.originalOrder = [...this.activeItems];
+          this.binnedItems = [];
+          setTimeout(() => {
+            this.message = '';
+          }, 5000);
+        },
+        handleSaveError(error) {
+          this.isProcessing = false;
+          this.message = `Failed to save order: ${error}`;
+          this.messageType = 'error';
+        },
+        chineseEnglishPortugueseVersionHelper(array, target) {
+          if (array.includes(target)) {
+            version = ' ' + target;
+          } else {
+            version = '';
+          }
+          return version;
+        },
+        getKeyExcludingNameAndForm(obj) {
+          for (let key in obj) {
+            if (obj.hasOwnProperty(key) && key !== 'name' && key !== 'form' && key !== 'label') {
+              return key;
+            }
+          }
+          return undefined;
+        },
+        listTrSettings(translationSettings) {
+          const menuElArray = [];
+          let j = 1;
+          let key, translators, formality, version;
+          for (let i in translationSettings.menuOrder) {
+            translators = [];
+            key = translationSettings.menuOrder[i];
+            // List of translators
+            if (translationSettings[key]) {
+              for (let j in translationSettings[key].targets) {
+                if (translationSettings[key].targets[j].hasOwnProperty('deepL')) {
+                  if (translationSettings[key].targets[j].form == 'default') {
+                    formality = '';
+                  } else {
+                    formality = translationSettings[key].targets[j].form == 'less' ? ' informal' : ' formal';
+                  }
+                  version = this.chineseEnglishPortugueseVersionHelper(['EN-US', 'EN-GB', 'PT-BR', 'PT-PT'], translationSettings[key].targets[j].deepL);
+                  translators.push('DeepL' + version + formality);
+                } else if (translationSettings[key].targets[j].hasOwnProperty('google')) {
+                  version = this.chineseEnglishPortugueseVersionHelper(['zh-CN', 'zh-TW'], translationSettings[key].targets[j].google);
+                  translators.push('Google' + version);
+                } else {
+                  const trLLM = this.getKeyExcludingNameAndForm(translationSettings[key].targets[j])
+                  version = this.chineseEnglishPortugueseVersionHelper(['zh-CN', 'zh-TW', 'PT-BR', 'PT-PT'], translationSettings[key].targets[j][trLLM]);
+
+                  label = translationSettings[key].targets[j].label;
+                  if (label == null) {
+                    label = 'OpenAI ' + LEGACY_OPENAI;
+                  }
+                  translators.push(label + version);
+                }
+              }
+
+              // End. List of translators
+              let trSlotName = `tra${j} ${translationSettings[key].sourceTarget} (${translators.join(', ')})`;
+              if (trSlotName.length > 50) {
+                trSlotName = trSlotName.replaceAll(' formal', ' f.');
+                trSlotName = trSlotName.replaceAll(' informal', ' inf.');
+              }
+              // TrMenu.addItem(trSlotName, 'translationSlots.s' + j + '.run');
+              menuElArray.push(trSlotName);
+              j++;
+            }
+          }
+          return menuElArray;
+        }
+      },
+      mounted() {
+        this.initializeItems();
+      }
+    });
+  </script>
+</body>
+</html>

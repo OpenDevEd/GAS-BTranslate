@@ -2,7 +2,6 @@
 function submenu_09_translate_basic(e) {
   let tryToRetrieveProperties, label;
   const TrMenu = DocumentApp.getUi().createMenu('bTranslate');
-
   if (e && e.authMode == ScriptApp.AuthMode.NONE) {
     TrMenu.addItem('Activate menu', 'activateMenu');
     tryToRetrieveProperties = false;
@@ -64,6 +63,7 @@ function submenu_09_translate_basic(e) {
   // Submenu "Translation Settings"
   const menuTranslationSettings = DocumentApp.getUi().createMenu('Translation settings');
   menuTranslationSettings.addItem('Add translation settings', 'translationSettingsSidebar')
+  menuTranslationSettings.addItem('Edit translation settings', 'menuOrderSidebar')
   menuTranslationSettings.addItem('Clear translation settings', 'clearTranslationSettings')
   menuTranslationSettings.addItem('Example settings: Google', 'exampleTranslationSettingsGoogle')
   menuTranslationSettings.addItem('Example settings: DeepL', 'exampleTranslationSettingsDeepL');
