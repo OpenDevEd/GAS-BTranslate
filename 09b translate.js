@@ -19,7 +19,7 @@ const DEFAULT_OPENAI_MODEL = {
 };
 
 const DEFAULT_ANTHROPIC_MODEL = {
-  "model": "claude-3-5-sonnet-20240620",
+  "model": "claude-3-5-sonnet-20241022",
   "temperature": 0,
   "maxTokens": 8192,
   "customPrompt": 'Translate from <S> to <T>. Return only translation.',
