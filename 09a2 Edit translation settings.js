@@ -26,7 +26,7 @@ function setNewMenuOrderServerside(newMenuOrder, binnedItems) {
   userProperties.setProperty('TRANSLATION_SETTINGS', JSON.stringify(translationSettings));
 
   const result = {
-    status: 'ok'
+    status: 'ok', updatedTranslationSettings: translationSettings
   };
   //Logger.log(finalSettings);
   onOpen();

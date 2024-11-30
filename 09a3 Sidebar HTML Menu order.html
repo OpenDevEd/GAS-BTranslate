@@ -256,10 +256,10 @@
         },
         handleSaveSuccess(result) {
           this.isProcessing = false;
+          this.translationSettings = result.updatedTranslationSettings;
           this.message = result.message || 'Order saved successfully';
           this.messageType = 'success';
-          this.originalOrder = [...this.activeItems];
-          this.binnedItems = [];
+          this.initializeItems();
           setTimeout(() => {
             this.message = '';
           }, 5000);
