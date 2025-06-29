@@ -13,6 +13,14 @@ function submenu_09_translate_basic(e) {
     const translationSettings = getTranslationSettings();
     let j = 1;
     let key, translators, formality, version;
+    const totalSettings = translationSettings.menuOrder ? translationSettings.menuOrder.length : 0;
+    
+    // Create submenu for 5th and following items if there are 5 or more settings
+    let otherSettingsSubmenu = null;
+    if (totalSettings >= 5) {
+      otherSettingsSubmenu = DocumentApp.getUi().createMenu('More translations');
+    }
+    
     for (let i in translationSettings.menuOrder) {
       translators = [];
       key = translationSettings.menuOrder[i];
@@ -48,9 +56,20 @@ function submenu_09_translate_basic(e) {
           trSlotName = trSlotName.replaceAll(' formal', ' f.');
           trSlotName = trSlotName.replaceAll(' informal', ' inf.');
         }
-        TrMenu.addItem(trSlotName, 'translationSlots.s' + j + '.run');
+        
+        // Add to main menu (first 4) or submenu (5th and following)
+        if (j <= 4) {
+          TrMenu.addItem(trSlotName, 'translationSlots.s' + j + '.run');
+        } else {
+          otherSettingsSubmenu.addItem(trSlotName, 'translationSlots.s' + j + '.run');
+        }
         j++;
       }
+    }
+    
+    // Add the "Other settings" submenu if it was created
+    if (otherSettingsSubmenu !== null) {
+      TrMenu.addSubMenu(otherSettingsSubmenu);
     }
 
     if (j == 1) {
