@@ -9,24 +9,6 @@ const LEGACY_OPENAI_MODEL = {
   "useDefaultPrompt": false
 };
 
-const DEFAULT_OPENAI_MODEL = {
-  "model": "gpt-4o-2024-08-06",
-  "temperature": 0,
-  "maxTokens": 16383,
-  "customPrompt": 'Translate from <S> to <T>. Return only translation.',
-  "name": "GPT-4o",
-  "useDefaultPrompt": false
-};
-
-const DEFAULT_ANTHROPIC_MODEL = {
-  "model": "claude-3-5-sonnet-20241022",
-  "temperature": 0,
-  "maxTokens": 8192,
-  "customPrompt": 'Translate from <S> to <T>. Return only translation.',
-  "name": "SONNET-3-5",
-  "useDefaultPrompt": false
-};
-
 function getApiKey(translator) {
   const translatorName = PROPERTY_NAMES[translator]['textName'];
   const propertyApiKeyName = PROPERTY_NAMES[translator]['propertyApiKeyName'];

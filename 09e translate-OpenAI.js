@@ -13,6 +13,27 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
       systemMessage += ' Preserve html tags.';
     }
 
+    const messagesArray = [{ "role": "user", "content": inputText }];
+    let payloadJson;
+    if (['gpt-5.2', 'gpt-5.2-pro', 'gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'o1-preview', 'o1-preview-2024-09-12', 'o1-mini', 'o1-mini-2024-09-12', 'o4-mini', 'o3', 'gpt-4o-search-preview', 'gpt-4o-mini-search-preview'].includes(model)) {
+      messagesArray.unshift({ "role": "user", "content": systemMessage });
+      payloadJson = {
+        model: model,
+        "max_completion_tokens": Number(maxTokens),
+        "messages": messagesArray,
+        //"temperature": Number(temperature)
+      }
+    } else {
+      messagesArray.unshift({ "role": "system", "content": systemMessage });
+      payloadJson = {
+        model: model,
+        "max_tokens": Number(maxTokens),
+        "messages": messagesArray,
+        "temperature": Number(temperature)
+      }
+    }
+
+
     const url = 'https://api.openai.com/v1/chat/completions';
     const options = {
       method: 'POST',
@@ -20,16 +41,7 @@ function translateTextOpenAI(inputText, sourceLang, targetLang, apiKey, modelSet
         'Authorization': 'Bearer ' + apiKey,
         'Content-Type': 'application/json'
       },
-      payload: JSON.stringify({
-        model: model,
-        // "messages": [{ "role": "user", "content": inputText + '\nTranslate to ' + targetLang }],
-        "messages": [
-          { "role": "system", "content": systemMessage },
-          { "role": "user", "content": inputText }
-        ],
-        "max_tokens": Number(maxTokens),
-        "temperature": Number(temperature)
-      }),
+      payload: JSON.stringify(payloadJson),
       muteHttpExceptions: false
     };
 

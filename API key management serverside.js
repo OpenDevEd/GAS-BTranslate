@@ -154,26 +154,6 @@ function allProviders() {
   return JSON.stringify(allProviders);
 }
 
-const settings = {
-  Anthropic: {
-    arrayAllModels: ["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-5-sonnet-20240620", "claude-3-opus-20240229", "claude-3-haiku-20240307"],
-    maxTokens: { min: 0, max: 8192, step: 1 },
-    maxTokensForModel: [8192, 8192, 8192, 4096, 4096],
-    temperature: { min: 0, max: 1, step: 0.1 },
-    useDefaultPrompt: true,
-    defaultPrompt: 'Translate from <S> to <T>. Return only translation.'
-  },
-  OpenAI: {
-    arrayAllModels: ["gpt-4o-2024-08-06", "gpt-4o", "gpt-4o-mini"],
-    maxTokens: { min: 0, max: 16383, step: 1 },
-    maxTokensForModel: [16383, 4095, 16383],
-    temperature: { min: 0, max: 2, step: 0.01 },
-    useDefaultPrompt: true,
-    defaultPrompt: 'Translate from <S> to <T>. Return only translation.'
-  }
-};
-
-
 function getTranslators(provider) {
   const arrayTranslators = JSON.parse(getAiModels());
 
