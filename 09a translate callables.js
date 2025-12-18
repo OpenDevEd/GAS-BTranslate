@@ -84,6 +84,7 @@ function submenu_09_translate_basic(e) {
   menuTranslationSettings.addItem('Add translation settings', 'translationSettingsSidebar')
   menuTranslationSettings.addItem('Edit translation settings', 'menuOrderSidebar')
   menuTranslationSettings.addItem('Clear translation settings', 'clearTranslationSettings')
+  menuTranslationSettings.addItem('Default LLM settings', 'defaultLlmSettings')
   menuTranslationSettings.addItem('Example settings: Google', 'exampleTranslationSettingsGoogle')
   menuTranslationSettings.addItem('Example settings: DeepL', 'exampleTranslationSettingsDeepL');
   menuTranslationSettings.addSeparator();
