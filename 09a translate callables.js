@@ -2,6 +2,7 @@
 function submenu_09_translate_basic(e) {
   let tryToRetrieveProperties, label;
   const TrMenu = DocumentApp.getUi().createMenu('bTranslate');
+  TrMenu.addItem('Update available 🔴', 'updateAvailableSidebar');
   if (e && e.authMode == ScriptApp.AuthMode.NONE) {
     TrMenu.addItem('Activate menu', 'activateMenu');
     tryToRetrieveProperties = false;
@@ -194,4 +195,8 @@ function translationSettingsSidebar() {
     }
   }
   universalSidebar('New translation settings', 'bTranslate: Translation settings');
+}
+
+function updateAvailableSidebar() {
+  universalSidebar('Update available sidebar', 'bTranslate');
 }
